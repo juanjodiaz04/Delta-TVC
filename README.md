@@ -9,4 +9,4 @@ Adicionalmente se hará una interfaz de usuario empleando una pantalla LCD y tec
 Finalmente se miden variables significativas del sistema como: consumo de energía, voltaje, entre otros.
 
 ## Motivación
-La motivación personal de este proyecto surge del desafío que representa la implementación de controladores PID en sistemas que interactúan de manera compleja con el entorno. Complementado con un curiosidad por aprender a desarrollar un sistema embedido y observar sus aplicaciones en la vida real. Además de que existe un interés **colectivo** dentro del equipo por los temas aeroespaciales y la cohetería.
+La motivación personal de este proyecto surge del desafío que representa la implementación de controladores PID en sistemas que interactúan de manera compleja con el entorno. Complementado con una curiosidad por aprender a desarrollar un sistema embedido y observar sus aplicaciones en la vida real. Además de que existe un interés **colectivo** dentro del equipo por los temas aeroespaciales y la cohetería.
