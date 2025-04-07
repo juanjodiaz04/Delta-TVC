@@ -10,3 +10,10 @@ Finalmente se miden variables significativas del sistema como: consumo de energ�
 
 ## Motivación
 La motivación personal de este proyecto surge del desafío que representa la implementación de controladores PID en sistemas que interactúan de manera compleja con el entorno. Complementado con una curiosidad por aprender a desarrollar un sistema embedido y observar sus aplicaciones en la vida real. Además de que existe un interés **colectivo** dentro del equipo por los temas aeroespaciales y la cohetería.
+
+## Requisitos No Funcionales
+- **Rendimiento**: El sistema embebido debe mantener la estabilidad del ángulo del cohete dentro de un margen de error máximo del 5% respecto al valor objetivo (*setpoint*).
+-	**Fiabilidad**: El sistema debe ser capaz de responder adecuadamente ante perturbaciones angulares de hasta 30 grados, garantizando un comportamiento controlado y seguro.
+-	**Usabilidad**: Se debe proporcionar una interfaz de usuario intuitiva que permita visualizar en tiempo real el ángulo actual del sistema, así como ingresar de forma sencilla los parámetros del controlador PID.
+-	**Tiempo de respuesta**: El sistema debe ser capaz de reaccionar ante una perturbación y estabilizar el ángulo en un tiempo inferior a 3 segundos.
+-	**Consumo de Energía**: Considerando los tiempos y consumo del vuelo del cohete, el sistema debe estar encendido por lo menos 20 minutos durante el vuelo, y 5 minutos de control activo.
