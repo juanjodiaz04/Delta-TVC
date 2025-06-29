@@ -57,7 +57,7 @@ En la segunda parte, se probará la interfaz de usuario y el monitoreo de variab
 | Componentes electrónicos  | Pantalla OLED                                                     |           1  |                    30000  | Disponibilidad previa     |
 | Componentes electrónicos  | [TM-4X4] Teclado matricial de 16 teclas (4x4)                     |           1  |                    16000  |                           |
 | Componentes electrónicos  | Sensor INA219                                                     |           1  |                    15000  |                           |
-| Componentes electrónicos  | Batería Lipo 14.8v 1500mah 130c V2 CNHL Black                     |           1  |                    20000  |                           |
+| Componentes electrónicos  | Batería Lipo 14.8v 1500mah 130c V2 CNHL Black                     |           1  |                    200000 |                           |
 | Componentes electrónicos  | Protoboard y cables                                               |           1  |                    10000  |                           |
 | Componentes electrónicos  | Módulo Multiplexor CD74HC4067                                     |           1  |                     3400  |                           |
 | Componentes electrónicos  | PCB (opcional)                                                    |               |                           |                           |
