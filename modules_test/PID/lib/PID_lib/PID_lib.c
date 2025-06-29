@@ -26,28 +26,19 @@ void pid_create(pid_controller_t *pid, float *in, float *out, float *set, float 
 
 void pid_compute(pid_controller_t *pid)
 {
-    static absolute_time_t last_call = {0};
 
     if (!pid->automode)
         return;
 
-    absolute_time_t now = get_absolute_time();
-    uint32_t elapsed = to_ms_since_boot(now) - to_ms_since_boot(last_call);
+    float input = *(pid->input);                                // Read the current input value    
+    float error = *(pid->setpoint) - input;                     // Calculate the error (setpoint - input)
 
-    if (elapsed < pid->sampletime)
-        return;
-
-    last_call = now;
-
-    float input = *(pid->input);
-    float error = *(pid->setpoint) - input;
-
-    pid->iterm += pid->Ki * error;
+    pid->iterm += pid->Ki * error;                              // Update the integral term
     if (pid->iterm > pid->omax) pid->iterm = pid->omax;
     else if (pid->iterm < pid->omin) pid->iterm = pid->omin;
 
-    float dinput = input - pid->lastin;
-    float output = pid->Kp * error + pid->iterm - pid->Kd * dinput;
+    float dinput = input - pid->lastin;                              // Calculate the change in input for the derivative term
+    float output = pid->Kp * error + pid->iterm - pid->Kd * dinput;  // Calculate the PID output
 
     if (output > pid->omax) output = pid->omax;
     else if (output < pid->omin) output = pid->omin;
