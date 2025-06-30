@@ -4,7 +4,7 @@
  *
  * This file provides basic functions to control hobby servos via
  * GPIO and hardware PWM. Servos are controlled using pulses from
- * 1000 to 2000 µs at a frequency of 50 Hz.
+ * 1000 to 2000 µs at a frequency of 50 Hz and a fixed clkdiv of 64.
  */
 
 #include "pico/stdlib.h"
@@ -16,7 +16,8 @@
 #define SERVO_MAX_PULSE_US  2000   /**< Maximum pulse width in µs */
 #define SERVO_MIN_ANGLE     0      /**< Minimum angle in degrees */
 #define SERVO_MAX_ANGLE     180    /**< Maximum angle in degrees */
-#define SERVO_PERIOD_US     20000  /**< PWM period for 50 Hz (20 ms) */
+#define SERVO_PERIOD_US     20000  /**< 50 Hz = 20 ms period */
+#define SERVO_CLKDIV        64.0f  /**< Fixed PWM clock divider */
 
 /**
  * @brief Maps a value from one range to another.
@@ -28,11 +29,21 @@ static inline uint16_t map(uint16_t x, uint16_t in_min, uint16_t in_max,
 }
 
 /**
- * @brief Converts an angle in degrees to a pulse width in microseconds.
+ * @brief Converts an angle to the corresponding PWM level based on configured TOP.
  */
-static uint16_t angle_to_micros(uint8_t angle)
+static uint16_t angle_to_level(const servo_t *servo, uint8_t angle)
 {
-    return map(angle, SERVO_MIN_ANGLE, SERVO_MAX_ANGLE, SERVO_MIN_PULSE_US, SERVO_MAX_PULSE_US);
+    uint16_t micros = map(angle, SERVO_MIN_ANGLE, SERVO_MAX_ANGLE,
+                                 SERVO_MIN_PULSE_US, SERVO_MAX_PULSE_US);
+    return (uint16_t)((micros * servo->top) / SERVO_PERIOD_US);
+}
+
+/**
+ * @brief Converts microseconds to PWM level based on configured TOP.
+ */
+static uint16_t micros_to_level(const servo_t *servo, uint16_t micros)
+{
+    return (uint16_t)((micros * servo->top) / SERVO_PERIOD_US);
 }
 
 void servo_init(servo_t *servo, uint8_t pin)
@@ -42,12 +53,11 @@ void servo_init(servo_t *servo, uint8_t pin)
 
     gpio_set_function(pin, GPIO_FUNC_PWM);
 
-    servo->clkdiv = 64.0f;
-    servo->freq = 50;
-    uint32_t top = (uint32_t)((clock_get_hz(clk_sys) / (servo->clkdiv * servo->freq)) - 1);
+    uint32_t top = (uint32_t)((clock_get_hz(clk_sys) / (SERVO_CLKDIV * 50)) - 1);
+    servo->top = top;
 
     pwm_config config = pwm_get_default_config();
-    pwm_config_set_clkdiv(&config, servo->clkdiv);
+    pwm_config_set_clkdiv(&config, SERVO_CLKDIV);
     pwm_config_set_wrap(&config, top);
 
     pwm_init(servo->slice_num, &config, false);
@@ -58,10 +68,10 @@ void servo_start(const servo_t *servo, uint8_t angle)
     if (angle < SERVO_MIN_ANGLE || angle > SERVO_MAX_ANGLE)
         return;
 
-    uint16_t pulse = angle_to_micros(angle);
+    uint16_t level = angle_to_level(servo, angle);
     uint8_t channel = pwm_gpio_to_channel(servo->pin);
 
-    pwm_set_chan_level(servo->slice_num, channel, pulse);
+    pwm_set_chan_level(servo->slice_num, channel, level);
     pwm_set_enabled(servo->slice_num, true);
 }
 
@@ -70,10 +80,10 @@ void servo_set_angle(const servo_t *servo, uint8_t angle)
     if (angle < SERVO_MIN_ANGLE || angle > SERVO_MAX_ANGLE)
         return;
 
-    uint16_t pulse = angle_to_micros(angle);
+    uint16_t level = angle_to_level(servo, angle);
     uint8_t channel = pwm_gpio_to_channel(servo->pin);
 
-    pwm_set_chan_level(servo->slice_num, channel, pulse);
+    pwm_set_chan_level(servo->slice_num, channel, level);
 }
 
 void servo_set_micros(const servo_t *servo, uint16_t micros)
@@ -81,18 +91,8 @@ void servo_set_micros(const servo_t *servo, uint16_t micros)
     if (micros < SERVO_MIN_PULSE_US || micros > SERVO_MAX_PULSE_US)
         return;
 
+    uint16_t level = micros_to_level(servo, micros);
     uint8_t channel = pwm_gpio_to_channel(servo->pin);
-    pwm_set_chan_level(servo->slice_num, channel, micros);
-}
 
-void servo_set_freq_and_clkdiv(servo_t *servo, uint16_t freq, float clkdiv)
-{
-    if (freq == 0 || clkdiv == 0.0f)
-        return;
-
-    servo->freq = freq;
-    servo->clkdiv = clkdiv;
-
-    uint32_t top = (uint32_t)((clock_get_hz(clk_sys) / (servo->clkdiv * servo->freq)) - 1);
-    pwm_set_wrap(servo->slice_num, top);
+    pwm_set_chan_level(servo->slice_num, channel, level);
 }

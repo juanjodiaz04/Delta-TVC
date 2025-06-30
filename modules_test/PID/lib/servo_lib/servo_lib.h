@@ -22,8 +22,7 @@
 typedef struct {
     uint8_t pin;         /**< GPIO pin connected to the servo signal */
     uint8_t slice_num;   /**< PWM slice number associated with the pin */
-    float clkdiv;        /**< Clock divider for PWM frequency */
-    uint16_t freq;       /**< Frequency for PWM signal in Hz */
+    uint32_t top;       /**< PWM TOP value for the configured frequency */
 } servo_t;
 
 /**
@@ -61,16 +60,5 @@ void servo_set_angle(const servo_t *servo, uint8_t angle);
  * @param micros Pulse width in µs (valid range: 1000 to 2000).
  */
 void servo_set_micros(const servo_t *servo, uint16_t micros);
-
-/**
- * @brief Sets the PWM frequency and clock divider for the servo.
- *
- * This allows dynamic adjustment of the PWM signal characteristics.
- *
- * @param servo Pointer to a servo_t struct.
- * @param freq Frequency in Hz (e.g., 50 for standard servos).
- * @param clkdiv Clock divider value (e.g., 64.0f).
- */
-void servo_set_freq_and_clkdiv(servo_t *servo, uint16_t freq, float clkdiv);
 
 #endif // SERVO_H
