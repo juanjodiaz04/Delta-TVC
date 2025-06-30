@@ -1,31 +1,38 @@
 #include <stdio.h>
 #include "pico/stdlib.h"
-#include "hardware/timer.h"
-#include "hardware/clocks.h"
 #include "lib/ESC_lib/ESC_lib.h"
 
-int64_t alarm_callback(alarm_id_t id, void *user_data) {
-    // Put your timeout handler code in here
-    return 0;
-}
-
-
-
-
-int main()
-{
+int main() {
+    // Inicializar el sistema estándar de entrada/salida
     stdio_init_all();
 
-    // Timer example code - This example fires off the callback after 2000ms
-    add_alarm_in_ms(2000, alarm_callback, NULL, false);
-    // For more examples of timer use see https://github.com/raspberrypi/pico-examples/tree/master/timer
+    // Crear e inicializar el ESC
+    esc_t my_esc;
+    esc_init( &my_esc, 
+             15,     // GPIO del ESC
+             50,     // Frecuencia en Hz
+             64.0f );  // Divisor de reloj para PWM
 
-    printf("System Clock Frequency is %d Hz\n", clock_get_hz(clk_sys));
-    printf("USB Clock Frequency is %d Hz\n", clock_get_hz(clk_usb));
-    // For more examples of clocks use see https://github.com/raspberrypi/pico-examples/tree/master/clocks
+             
 
-    while (true) {
-        printf("Hello, world!\n");
-        sleep_ms(1000);
+    // Esperar a que el ESC esté listo (algunos requieren armarse)
+    sleep_ms(2000);
+
+    // Barrido de potencia de 0% a 100%
+    for (uint8_t duty = 0; duty <= 100; duty += 10) {
+        esc_write_duty(&my_esc, duty);
+        printf("Duty cycle: %u%%\n", duty);
+        sleep_ms(500);
     }
+
+    // Mantener a 50%
+    esc_write_duty(&my_esc, 50);
+    printf("Duty cycle estable en 50%%\n");
+
+    // Bucle infinito
+    while (true) {
+        tight_loop_contents();
+    }
+
+    return 0;
 }
