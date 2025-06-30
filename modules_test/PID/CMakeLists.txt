@@ -56,6 +56,8 @@ target_include_directories(PID PRIVATE
 # Add any user requested libraries
 target_link_libraries(PID 
         hardware_timer
+        hardware_pwm
+        hardware_clocks
         )
 
 pico_add_extra_outputs(PID)
