@@ -35,7 +35,9 @@ pico_sdk_init()
 
 # Add executable. Default name is the project name, version 0.1
 
-add_executable(PID PID.c )
+add_executable(PID PID.c 
+                lib/PID_lib/PID_lib.c
+                lib/servo_lib/servo_lib.c)
 
 pico_set_program_name(PID "PID")
 pico_set_program_version(PID "0.1")
