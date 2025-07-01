@@ -17,6 +17,7 @@ typedef struct {
 
         uint16_t frequency_hz;      /**< Frecuencia PWM en Hz. */
         uint8_t duty_percent;       /**< Pulso actual en microsegundos. */
+        uint8_t speed_percent;       /**< Porcentaje de velocidad actual del motor. */
         uint16_t pwm_wrap;          /**< Valor máximo del contador PWM. */
         float clkdiv;               /**< Divisor de reloj para configurar frecuencia PWM. */
 
@@ -41,6 +42,6 @@ void esc_init(esc_t* esc, uint8_t gpio_pin, uint16_t frequency_hz, float clkdiv)
  * 
  * @param esc Puntero a la estructura ESC.
  */
-void esc_write_duty(esc_t* esc, uint8_t duty_percent);
+void esc_write_speed(esc_t* esc, uint8_t speed_percent);
 
 #endif // ESC_LIB_H

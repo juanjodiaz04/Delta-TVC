@@ -13,14 +13,14 @@ int main() {
     // Esperar a que el ESC esté listo (algunos requieren armarse)
     sleep_ms(2000);
 
-    // Barrido de potencia no bloqueante
+    // Barrido 
     uint8_t duty = 0;
     uint64_t last_update = time_us_64();
     bool barrido_completo = false;
 
-    // Establecer duty inicial
-    esc_write_duty(&my_esc, duty);
-    printf("Duty cycle: %u%%\n", duty);
+    // Establecer velocidad inicial
+    esc_write_speed(&my_esc, duty);
+    printf("Speed: %u%%\n", duty);
 
     while (true) {
         uint64_t now = time_us_64();
@@ -31,9 +31,9 @@ int main() {
                 duty = 50;
                 barrido_completo = true;
                 printf("Duty cycle estable en 50%%\n");
-                esc_write_duty(&my_esc, duty);
+                esc_write_speed(&my_esc, duty);
             } else {
-                esc_write_duty(&my_esc, duty);
+                esc_write_speed(&my_esc, duty);
                 printf("Duty cycle: %u%%\n", duty);
             }
             last_update = now;

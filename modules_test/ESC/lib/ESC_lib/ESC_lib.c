@@ -31,15 +31,17 @@ void esc_init(esc_t *esc, uint8_t gpio_pin, uint16_t frequency_hz, float clkdiv)
     pwm_set_enabled(esc->BITS.pwm_slice, true);
 
     esc->BITS.duty_percent = 0;
+    esc->BITS.speed_percent = 0; // Inicializar velocidad al 0%
     esc->BITS.armed = false;
 }
 
-void esc_write_duty(esc_t *esc, uint8_t duty_percent)
+void esc_write_speed(esc_t *esc, uint8_t speed_percent)
 {
-    if (duty_percent > 100) duty_percent = 100; // Limitar a 100%
-    if (duty_percent < 0) duty_percent = 0; // Limitar a 0%
+    if (speed_percent > 100) speed_percent = 100; // Limitar a 100%
+    if (speed_percent < 0) speed_percent = 0; // Limitar a 0%
 
-    esc->BITS.duty_percent = duty_percent;
+    esc->BITS.speed_percent = speed_percent;
+    float duty_percent = 5.0 + (speed_percent * 5.0 / 100.0);
 
     // Calcular el valor del nivel PWM basado en porcentaje
     uint16_t level = ((esc->BITS.pwm_wrap + 1) * duty_percent) / 100;
