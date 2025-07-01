@@ -37,6 +37,9 @@ void esc_init(esc_t *esc, uint8_t gpio_pin, uint16_t frequency_hz, float clkdiv)
 void esc_write_duty(esc_t *esc, uint8_t duty_percent)
 {
     if (duty_percent > 100) duty_percent = 100; // Limitar a 100%
+    if (duty_percent < 0) duty_percent = 0; // Limitar a 0%
+
+    esc->BITS.duty_percent = duty_percent;
 
     // Calcular el valor del nivel PWM basado en porcentaje
     uint16_t level = ((esc->BITS.pwm_wrap + 1) * duty_percent) / 100;

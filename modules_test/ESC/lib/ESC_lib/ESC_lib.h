@@ -16,7 +16,7 @@ typedef struct {
         uint8_t pwm_channel  : 1;   /**< Canal PWM (0 o 1) dentro del slice. */
 
         uint16_t frequency_hz;      /**< Frecuencia PWM en Hz. */
-        uint8_t duty_percent;  /**< Pulso actual en microsegundos. */
+        uint8_t duty_percent;       /**< Pulso actual en microsegundos. */
         uint16_t pwm_wrap;          /**< Valor máximo del contador PWM. */
         float clkdiv;               /**< Divisor de reloj para configurar frecuencia PWM. */
 
