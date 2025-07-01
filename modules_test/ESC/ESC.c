@@ -13,7 +13,7 @@ int main() {
     // Esperar a que el ESC esté listo (algunos requieren armarse)
     sleep_ms(2000);
 
-// Barrido de potencia no bloqueante
+    // Barrido de potencia no bloqueante
     uint8_t duty = 0;
     uint64_t last_update = time_us_64();
     bool barrido_completo = false;
@@ -25,12 +25,13 @@ int main() {
     while (true) {
         uint64_t now = time_us_64();
 
-        if (!barrido_completo && now - last_update >= 500000) {  // 500 ms
+        if (!barrido_completo && now - last_update >= 2000000) {  // 2 segundos
             duty += 10;
             if (duty > 100) {
                 duty = 50;
                 barrido_completo = true;
                 printf("Duty cycle estable en 50%%\n");
+                esc_write_duty(&my_esc, duty);
             } else {
                 esc_write_duty(&my_esc, duty);
                 printf("Duty cycle: %u%%\n", duty);
@@ -38,7 +39,6 @@ int main() {
             last_update = now;
         }
 
-        tight_loop_contents();
     }
 
     return 0;
