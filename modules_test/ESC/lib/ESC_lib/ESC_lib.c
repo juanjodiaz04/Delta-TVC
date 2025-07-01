@@ -1,6 +1,6 @@
 #include "hardware/pwm.h"
 #include "hardware/gpio.h"
-#include "lib/ESC_lib/ESC_lib.h"
+#include "ESC_lib.h"
 
 /**
  * @brief Inicializa un ESC con los parámetros proporcionados.

@@ -8,12 +8,7 @@ int main() {
 
     // Crear e inicializar el ESC
     esc_t my_esc;
-    esc_init( &my_esc, 
-             15,     // GPIO del ESC
-             50,     // Frecuencia en Hz
-             64.0f );  // Divisor de reloj para PWM
-
-             
+    esc_init(&my_esc, 15, 50, 64.0f );
 
     // Esperar a que el ESC esté listo (algunos requieren armarse)
     sleep_ms(2000);

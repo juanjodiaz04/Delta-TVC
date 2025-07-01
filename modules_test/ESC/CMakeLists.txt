@@ -35,7 +35,9 @@ pico_sdk_init()
 
 # Add executable. Default name is the project name, version 0.1
 
-add_executable(ESC ESC.c )
+add_executable(ESC ESC.c 
+        lib/ESC_lib/ESC_lib.c
+)
 
 pico_set_program_name(ESC "ESC")
 pico_set_program_version(ESC "0.1")
@@ -57,6 +59,7 @@ target_include_directories(ESC PRIVATE
 target_link_libraries(ESC 
         hardware_timer
         hardware_clocks
+        hardware_pwm
         )
 
 pico_add_extra_outputs(ESC)
