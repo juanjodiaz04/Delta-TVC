@@ -42,6 +42,7 @@ void esc_write_speed(esc_t *esc, uint8_t speed_percent)
 
     esc->BITS.speed_percent = speed_percent;
     float duty_percent = 5.0 + (speed_percent * 5.0 / 100.0);
+    esc->BITS.duty_percent = duty_percent; // Actualizar duty_percent
 
     // Calcular el valor del nivel PWM basado en porcentaje
     uint16_t level = ((esc->BITS.pwm_wrap + 1) * duty_percent) / 100;
