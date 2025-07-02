@@ -9,6 +9,7 @@ int main() {
     // Crear e inicializar el ESC
     esc_t my_esc;
     esc_init(&my_esc, 15, 50, 64.0f );
+    esc_write_speed(&my_esc, 0); // Pulso minimo para iniciar el ESC
 
     // Esperar a que el ESC esté listo (algunos requieren armarse)
     sleep_ms(2000);
