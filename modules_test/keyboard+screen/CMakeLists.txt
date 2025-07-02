@@ -36,8 +36,8 @@ pico_sdk_init()
 # Add executable. Default name is the project name, version 0.1
 
 add_executable(keyboard+screen keyboard+screen.c
-            ../oled_screen/lib/ssd1306.c
-            ../keyboard/lib/mat.c )
+            lib/ssd1306.c
+            lib/mat.c )
 
 pico_set_program_name(keyboard+screen "keyboard+screen")
 pico_set_program_version(keyboard+screen "0.1")
@@ -57,7 +57,7 @@ target_include_directories(keyboard+screen PRIVATE
 
 # Add any user requested libraries
 target_link_libraries(keyboard+screen 
-        
+        hardware_i2c
         )
 
 pico_add_extra_outputs(keyboard+screen)
