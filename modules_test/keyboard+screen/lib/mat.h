@@ -42,4 +42,11 @@ void set_dirs_mat(bool);
  */
 bool read_mat(volatile uint8_t* value);
 
+/**
+ * @brief Obtiene la bandera de interrupción del teclado matricial
+ * 
+ * @return true si se ha presionado una tecla, false en caso contrario.
+ */
+bool get_key_flag(void);
+
 #endif

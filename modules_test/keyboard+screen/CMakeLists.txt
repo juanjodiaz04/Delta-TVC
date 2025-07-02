@@ -37,7 +37,8 @@ pico_sdk_init()
 
 add_executable(keyboard+screen keyboard+screen.c
             lib/ssd1306.c
-            lib/mat.c )
+            lib/mat.c 
+            lib/I2C_driver/i2c_driver.c)
 
 pico_set_program_name(keyboard+screen "keyboard+screen")
 pico_set_program_version(keyboard+screen "0.1")
@@ -58,6 +59,7 @@ target_include_directories(keyboard+screen PRIVATE
 # Add any user requested libraries
 target_link_libraries(keyboard+screen 
         hardware_i2c
+        hardware_timer
         )
 
 pico_add_extra_outputs(keyboard+screen)

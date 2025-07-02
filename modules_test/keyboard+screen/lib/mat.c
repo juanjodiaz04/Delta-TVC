@@ -10,7 +10,7 @@
 
 static volatile uint8_t reading; /*!< Momento de lectura del teclado. */
 static volatile uint8_t gpio_pressed; /*!< GPIO que genera la interrupción. */
-
+static volatile bool keyFlag; /*!< Bandera para indicar si se ha presionado una tecla. */
   /**
  * @brief Función que se ejecuta cuando se presiona una tecla
  * 
@@ -25,6 +25,7 @@ void mat_callback(uint gpio, uint32_t events){
     if(reading==0){
         reading=1;
         gpio_pressed=(uint8_t)gpio;
+        keyFlag = true; // Indica que se ha presionado una tecla
     }
 }
 
@@ -82,6 +83,7 @@ bool read_mat(volatile uint8_t* value){
         set_dirs_mat(true);
         gpio_put(gpio_pressed,true);
         reading=2;
+        keyFlag = false; // Resetea la bandera de tecla presionada
     }
     else if(reading==2){
         char dic_mat[16]={'1','2','3','A','4','5','6','B','7','8','9','C','*','0','#','D'};
@@ -110,4 +112,8 @@ bool read_mat(volatile uint8_t* value){
         }
     }
     return false;
+}
+
+inline bool get_key_flag(void) {
+    return keyFlag; // Retorna el estado de la bandera de tecla presionada
 }
