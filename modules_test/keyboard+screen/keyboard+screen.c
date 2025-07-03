@@ -16,6 +16,15 @@
 
 #define MAX_INPUT_LENGTH 16  // Maximum characters for number input
 
+/// Intervalo de tiempo para actualizar la pantalla
+#define INTERVALO_MS_UPDATE 100
+
+/// Bandera para timer de captura de datos
+volatile float valor_prueba = 0.0f;
+
+/// Timer para capturar datos desde el UART
+static repeating_timer_t timer_update;
+
 ssd1306_t oled;
 
 float ki, kp, kd, setpoint; // PID variables
@@ -43,6 +52,21 @@ void screen_2(ssd1306_t *oled){
     ssd1306_draw_string(oled, 0, 40, 1, "Gy_x = 0.00");
     ssd1306_draw_string(oled, 0, 50, 1, "Gy_y = 0.00");
     ssd1306_draw_string(oled, 0, 60, 1, "Gy_z = 0.00");
+    ssd1306_show(oled);
+}
+
+void screen_IMU_update(ssd1306_t *oled){
+    ssd1306_clear(oled);
+    ssd1306_draw_string(oled, 0, 0, 1, "Automatic Mode");
+    char buffer[32];
+    snprintf(buffer, sizeof(buffer), "Ac_x = %.2f", valor_prueba);
+    ssd1306_draw_string(oled, 0, 10, 1, buffer);
+    snprintf(buffer, sizeof(buffer), "Ac_y = %.2f", valor_prueba*2);
+    ssd1306_draw_string(oled, 0, 20, 1, buffer);
+    snprintf(buffer, sizeof(buffer), "Gy_x = %.2f", valor_prueba*3);
+    ssd1306_draw_string(oled, 0, 40, 1, buffer);
+    snprintf(buffer, sizeof(buffer), "Gy_y = %.2f", valor_prueba*4);
+    ssd1306_draw_string(oled, 0, 50, 1, buffer);
     ssd1306_show(oled);
 }
 
@@ -275,6 +299,23 @@ float keyboard_to_float(ssd1306_t *oled, const char *prompt) {
     }
 }
 
+/**
+ * TODO: Cuando tengamos implementado la comunicación entre PICOs
+ * esta función debe ser llamada cada cierto tiempo, se supone que ya
+ * se capturaron los datos de la IMU y se guardaron en alguna variable
+ * global, por lo que aquí solo se actualiza la pantalla.
+ */
+bool timer_callback(repeating_timer_t *rt) {
+    valor_prueba += 0.1f; // Simulate some data capture
+    if(valor_prueba > 6.0f) {
+        valor_prueba = 0.0f; // Reset after reaching a threshold
+    }
+    screen_IMU_update(&oled);
+}
+
+
+
+
 int main()
 {
     stdio_init_all();
@@ -322,16 +363,19 @@ int main()
                 if (key == '1') {
                     state = 1; // Go to automatic mode
                     screen_2(&oled);
+                    add_repeating_timer_ms(INTERVALO_MS_UPDATE, timer_callback, NULL, &timer_update);
                 } else if (key == '2') {
                     state = 2; // Go to manual mode
                     
                 }
                 break;
             case 1: // Automatic mode
-                screen_2(&oled);
+                //screen_IMU_update(&oled);
+
                 if (key == '#') {
                     state = 0; // Go to main menu
                     screen_1(&oled);
+                    cancel_repeating_timer(&timer_update); // Stop the timer
                 }
                 break;
             case 2: // Manual mode
