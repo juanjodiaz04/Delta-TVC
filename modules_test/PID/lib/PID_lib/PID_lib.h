@@ -72,7 +72,7 @@ typedef struct {
  * @param ki Integral gain.
  * @param kd Derivative gain.
  */
-void pid_create(pid_controller_t *pid, float *in, float *out, float *set, float kp, float ki, float kd);
+void pid_create(pid_controller_t *pid, float *in, float *out, float *set, float kp, float ki, float kd, float omin, float omax);
 
 /**
  * @brief Computes a new PID output if the sample time has elapsed.

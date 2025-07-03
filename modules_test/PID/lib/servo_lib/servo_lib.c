@@ -12,8 +12,8 @@
 #include "hardware/clocks.h"
 #include "lib/servo_lib/servo_lib.h"
 
-#define SERVO_MIN_PULSE_US  1000   /**< Minimum pulse width in µs */
-#define SERVO_MAX_PULSE_US  2000   /**< Maximum pulse width in µs */
+#define SERVO_MIN_PULSE_US  600   /**< Minimum pulse width in µs */
+#define SERVO_MAX_PULSE_US  2400   /**< Maximum pulse width in µs */
 #define SERVO_MIN_ANGLE     0      /**< Minimum angle in degrees */
 #define SERVO_MAX_ANGLE     180    /**< Maximum angle in degrees */
 #define SERVO_PERIOD_US     20000  /**< 50 Hz = 20 ms period */

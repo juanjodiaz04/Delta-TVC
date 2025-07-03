@@ -6,7 +6,7 @@
 #include "lib/PID_lib/PID_lib.h"
 #include "pico/time.h"
 
-void pid_create(pid_controller_t *pid, float *in, float *out, float *set, float kp, float ki, float kd)
+void pid_create(pid_controller_t *pid, float *in, float *out, float *set, float kp, float ki, float kd, float omin, float omax)
 {
     pid->input = in;
     pid->output = out;
@@ -14,8 +14,8 @@ void pid_create(pid_controller_t *pid, float *in, float *out, float *set, float 
 
     pid->automode = false;
     pid->sampletime = 100; // Default sample time (ms)
-    pid->omin = -90.0f;
-    pid->omax = +90.0f;
+    pid->omin = omin;
+    pid->omax = omax;
 
     pid_direction(pid, E_PID_DIRECT);
     pid_tune(pid, kp, ki, kd);
