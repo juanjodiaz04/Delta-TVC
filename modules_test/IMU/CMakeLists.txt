@@ -38,7 +38,8 @@ pico_sdk_init()
 add_executable(IMU IMU.c 
                 lib/LSM303D/lsm303d.c
                 lib/mpu6050/mpu6050.c
-                lib/I2C_driver/i2c_driver.c)
+                lib/I2C_driver/i2c_driver.c
+                lib/kalman_filter/kalman_filter.c)
 
 pico_set_program_name(IMU "IMU")
 pico_set_program_version(IMU "0.1")
