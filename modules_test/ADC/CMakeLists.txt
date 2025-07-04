@@ -35,14 +35,15 @@ pico_sdk_init()
 
 # Add executable. Default name is the project name, version 0.1
 
-add_executable(sensorV_I sensorV_I.c )
+add_executable(sensorV_I sensorV_I.c 
+adc.c)
 
 pico_set_program_name(sensorV_I "sensorV_I")
 pico_set_program_version(sensorV_I "0.1")
 
 # Modify the below lines to enable/disable output over UART/USB
 pico_enable_stdio_uart(sensorV_I 0)
-pico_enable_stdio_usb(sensorV_I 0)
+pico_enable_stdio_usb(sensorV_I 1)
 
 # Add the standard library to the build
 target_link_libraries(sensorV_I

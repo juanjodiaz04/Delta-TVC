@@ -4,13 +4,14 @@
 
 int main() {
     stdio_init_all();
+    sleep_ms(2000); // Espera para estabilizar la salida del ADC
     printf("Lectura de corriente con ACS712\n");
 
     adc_t adc_sensor;
     adc_util_init(&adc_sensor, 26, 0, 3.3f);
 
     // Configuración específica del ACS712
-    const float V_OFFSET = 3.3f / 2.0f;     // Asumimos Vcc = 3.3 V
+    const float V_OFFSET = 1.65f;     // Asumimos Vcc = 3.3 V
     const float SENSITIVITY = 0.185f;       // 185 mV/A para ACS712-05A
 
     while (1) {

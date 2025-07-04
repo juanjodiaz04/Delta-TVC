@@ -65,7 +65,7 @@ float adc_util_read_voltage(adc_t* adc);
  * @param sensitivity Sensibilidad en V/A (por ejemplo, 0.185 V/A para el ACS712-05A).
  * @return float Corriente medida en amperios.
  */
-float adc_read_current_acs712(adc_t* adc, float v_offset, float sensitivity);
+float adc_util_read_current_acs712(adc_t* adc, float v_offset, float sensitivity);
 
 
 
