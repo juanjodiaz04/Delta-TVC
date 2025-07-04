@@ -10,9 +10,9 @@
 // I2C defines
 // This example will use I2C0 on GPIO8 (SDA) and GPIO9 (SCL) running at 400KHz.
 // Pins can be changed, see the GPIO function select table in the datasheet for information on GPIO assignments
-#define I2C_PORT i2c0
-#define I2C_SDA 20
-#define I2C_SCL 21
+#define I2C_PORT_OLED i2c0
+#define I2C_SDA_OLED 20
+#define I2C_SCL_OLED 21
 
 #define MAX_INPUT_LENGTH 16  // Maximum characters for number input
 
@@ -126,7 +126,7 @@ int main()
     //=======================================================
 
     // I2C screen initialization
-    i2c_setup(I2C_PORT, I2C_SDA, I2C_SCL); // Initialize I2C at 400kHz
+    i2c_setup(I2C_PORT_OLED, I2C_SDA_OLED, I2C_SCL_OLED); // Initialize I2C at 400kHz
     // Initialize the OLED display
     oled.external_vcc=false;
 	bool res = ssd1306_init(&oled, 128, 64, 0x3c, i2c0);
@@ -195,11 +195,15 @@ void StatePID(void) {
 
 void wait_for_key_press() {
     key = 0;
-    while (key == 0) {
-        if (get_key_flag()) {
-            while (!read_mat(&key));
-        }
-        sleep_ms(50);
+    // while (key == 0) {
+    //     if (get_key_flag()) {
+    //         while (!read_mat(&key));
+    //     }
+    //     sleep_ms(50);
+    // }
+    while (!get_key_flag()){tight_loop_contents();}
+    if(get_key_flag()) {
+        while (!read_mat(&key));
     }
 }
 
@@ -222,23 +226,21 @@ void StateManual(void) {
 
     screen_params_summary(&oled, ki, kp, kd, setpoint);
 
-    key = 0;
-    while (key == 0) {
-        if (get_key_flag()) {
-            while (!read_mat(&key));
-            if (key == '*') {
-                screen_1(&oled);
-                CurrentState = StateMainMenu;
-            } else if (key == '#') {
-                screen_2(&oled);
-                add_repeating_timer_ms(INTERVALO_MS_UPDATE_SCREEN, timer_callback_screen, NULL, &timer_update_screen);
-                add_repeating_timer_ms(INTERVALO_MS_SERVOS, timer_callback_servos, NULL, &timer_servos);
-                add_repeating_timer_ms(INTERVALO_MS_IMU, timer_callback_imu, NULL, &timer_imu);
-                CurrentState = StatePID;
-            }
+    while (!get_key_flag()){tight_loop_contents();}
+    if (get_key_flag()) {
+        while (!read_mat(&key));
+        if (key == '*') {
+            screen_1(&oled);
+            CurrentState = StateMainMenu;
+        } else if (key == '#') {
+            screen_2(&oled);
+            add_repeating_timer_ms(INTERVALO_MS_UPDATE_SCREEN, timer_callback_screen, NULL, &timer_update_screen);
+            add_repeating_timer_ms(INTERVALO_MS_SERVOS, timer_callback_servos, NULL, &timer_servos);
+            add_repeating_timer_ms(INTERVALO_MS_IMU, timer_callback_imu, NULL, &timer_imu);
+            CurrentState = StatePID;
         }
-        sleep_ms(50);
     }
+    
 }
 
 
@@ -261,10 +263,10 @@ void screen_1(ssd1306_t *oled)
 void screen_2(ssd1306_t *oled){
     ssd1306_clear(oled);
     ssd1306_draw_string(oled, 0, 0, 1, "Automatic Mode");
-    ssd1306_draw_string(oled, 0, 10, 1, "Ac_x = 0.00");
-    ssd1306_draw_string(oled, 0, 20, 1, "Ac_y = 0.00");
-    ssd1306_draw_string(oled, 0, 40, 1, "Gy_x = 0.00");
-    ssd1306_draw_string(oled, 0, 50, 1, "Gy_y = 0.00");
+    ssd1306_draw_string(oled, 0, 20, 1, "Ac_x = 0.00");
+    ssd1306_draw_string(oled, 0, 30, 1, "Ac_y = 0.00");
+    ssd1306_draw_string(oled, 0, 45, 1, "Ag_x = 0.00");
+    ssd1306_draw_string(oled, 0, 55, 1, "Ag_y = 0.00");
     ssd1306_show(oled);
 }
 
@@ -283,15 +285,17 @@ void screen_IMU_update(ssd1306_t *oled){
     // ssd1306_show(oled);
 
     char buffer[32];
-    snprintf(buffer, sizeof(buffer), " %.2f", valor_prueba);
     ssd1306_clear_square(oled, 35, 10, 64, 54); // Clear the area for new data
-    ssd1306_draw_string(oled, 35, 10, 1, buffer);
-    snprintf(buffer, sizeof(buffer), " %.2f", valor_prueba*2);
+    snprintf(buffer, sizeof(buffer), " %.2f", valor_prueba);
     ssd1306_draw_string(oled, 35, 20, 1, buffer);
+    snprintf(buffer, sizeof(buffer), " %.2f", valor_prueba*2);
+    ssd1306_draw_string(oled, 35, 30, 1, buffer);
+
+    //Angulos
     snprintf(buffer, sizeof(buffer), " %.2f", valor_prueba*3);
-    ssd1306_draw_string(oled, 35, 40, 1, buffer);
+    ssd1306_draw_string(oled, 35, 45, 1, buffer);
     snprintf(buffer, sizeof(buffer), " %.2f", valor_prueba*4);
-    ssd1306_draw_string(oled, 35, 50, 1, buffer);
+    ssd1306_draw_string(oled, 35, 55, 1, buffer);
     ssd1306_show(oled);
 }
 
