@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include "pico/stdlib.h"
-#include "adc.h"
+#include "lib/adc_lib/adc_lib.h"
 
 int main() {
     stdio_init_all();

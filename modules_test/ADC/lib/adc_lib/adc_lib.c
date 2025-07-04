@@ -1,4 +1,4 @@
-#include "adc.h"
+#include "adc_lib.h"
 
 void adc_util_init(adc_t* adc, uint8_t gpio_pin, uint8_t adc_input, float vref)
 {

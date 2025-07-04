@@ -36,7 +36,8 @@ pico_sdk_init()
 # Add executable. Default name is the project name, version 0.1
 
 add_executable(sensorV_I sensorV_I.c 
-adc.c)
+lib/adc_lib/adc_lib.c
+)
 
 pico_set_program_name(sensorV_I "sensorV_I")
 pico_set_program_version(sensorV_I "0.1")
