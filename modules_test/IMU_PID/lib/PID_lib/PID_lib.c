@@ -6,7 +6,7 @@
 #include "lib/PID_lib/PID_lib.h"
 #include "pico/time.h"
 
-void pid_create(pid_controller_t *pid, float *in, uint16_t *out, float set, float kp, float ki, float kd, float omin, float omax)
+void pid_create(pid_controller_t *pid, float *in, float *out, float set, float kp, float ki, float kd, float omin, float omax)
 {
     pid->input = in;
     pid->output = out;

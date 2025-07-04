@@ -23,8 +23,8 @@
 #define ROLL_OFFSET 80
 #define PITCH_OFFSET 110
 
-#define ROLL_SETPOINT 90
-#define PITCH_SETPOINT 90
+#define ROLL_SETPOINT 0
+#define PITCH_SETPOINT 0
 
 // Estructuras de datos
 pid_controller_t pid_controller_roll;
@@ -32,6 +32,10 @@ pid_controller_t pid_controller_pitch;
 servo_t servo_roll;
 servo_t servo_pitch;
 mpu6050_data_t mpu6050_data;
+
+// Variables para las salidas del PID
+float pid_output_roll = 0.0f;
+float pid_output_pitch = 0.0f;
 
 /// Timers
 static repeating_timer_t timer_inst_IMU;
@@ -53,10 +57,13 @@ bool timer_callback_IMU(repeating_timer_t *rt) {
 bool PID_callback(repeating_timer_t *rt) {
     pid_compute(&pid_controller_roll);
     pid_compute(&pid_controller_pitch);
-    servo_set_angle(&servo_roll, (uint8_t)(*pid_controller_roll.output + ROLL_OFFSET));
-    servo_set_angle(&servo_pitch, (uint8_t)(*pid_controller_pitch.output + PITCH_OFFSET));
+    // servo_set_angle(&servo_roll, (uint8_t)(*pid_controller_roll.output + ROLL_OFFSET));
+    // servo_set_angle(&servo_pitch, (uint8_t)(*pid_controller_pitch.output + PITCH_OFFSET));
+    servo_set_angle(&servo_roll, (uint8_t)(pid_output_roll + ROLL_OFFSET));
+    servo_set_angle(&servo_pitch, (uint8_t)(pid_output_pitch + PITCH_OFFSET));
+    //printf(" Roll:%f, Pitch:%f\n", *(pid_controller_roll.output) + ROLL_OFFSET, *(pid_controller_pitch.output) + PITCH_OFFSET);
+    printf(" Roll:%f, Pitch:%f\n", pid_output_roll + ROLL_OFFSET, pid_output_pitch + PITCH_OFFSET);
 
-    printf(" Roll:%f, Pitch:%f\n", *pid_controller_roll.output + ROLL_OFFSET, *pid_controller_pitch.output + PITCH_OFFSET);
     return true;
 }
 
@@ -67,8 +74,12 @@ int main() {
     servo_init(&servo_roll, ROLL_SERVO_PIN, 90);
     servo_init(&servo_pitch, PITCH_SERVO_PIN, 90);
 
-    pid_create(&pid_controller_roll, &mpu6050_data.AngleRoll, &servo_roll.angle, ROLL_SETPOINT, 100.0f, 0.0f, 0.0f, -20.0f, 20.0f);
-    pid_create(&pid_controller_pitch, &mpu6050_data.AnglePitch, &servo_pitch.angle, PITCH_SETPOINT, 100.0f, 0.0f, 0.0f, -30.0f, 30.0f);
+    // pid_create(&pid_controller_roll, &mpu6050_data.KalmanAngleRoll, &servo_roll.angle, ROLL_SETPOINT, 100.0f, 0.0f, 0.0f, -20.0f, 20.0f);
+    // pid_create(&pid_controller_pitch, &mpu6050_data.KalmanAnglePitch, &servo_pitch.angle, PITCH_SETPOINT, 100.0f, 0.0f, 0.0f, -30.0f, 30.0f);
+    pid_create(&pid_controller_roll, &mpu6050_data.KalmanAngleRoll, &pid_output_roll, ROLL_SETPOINT, 
+        30.0f, 3.0f, 0.0f, -20.0f, 20.0f);
+    pid_create(&pid_controller_pitch, &mpu6050_data.KalmanAnglePitch, &pid_output_pitch, PITCH_SETPOINT, 
+        30.0f, 3.0f, 0.0f, -30.0f, 30.0f);
 
     sleep_ms(2000); // Wait for device to power up
 
@@ -86,7 +97,7 @@ int main() {
     printf("R:,P:,kR:,kP:\n");
 
     add_repeating_timer_ms(UPDATE_RATE_MS, timer_callback_IMU, NULL, &timer_inst_IMU);
-    add_repeating_timer_ms(2000, PID_callback, NULL, &timer_inst_PID);
+    add_repeating_timer_ms(100, PID_callback, NULL, &timer_inst_PID);
 
     while (1) {
 
@@ -101,7 +112,7 @@ int main() {
                 mpu6050_data.RatePitch, mpu6050_data.AnglePitch,
                 UPDATE_RATE_S);
 
-            //printf("%f,%f,", mpu6050_data.AngleRoll, mpu6050_data.AnglePitch);
+            //printf("%f,%f,\n", mpu6050_data.AngleRoll, mpu6050_data.AnglePitch);
             
         }
     }

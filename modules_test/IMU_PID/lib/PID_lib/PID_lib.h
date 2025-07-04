@@ -41,7 +41,7 @@ typedef enum {
  */
 typedef struct {
     float *input;     /**< Pointer to measured input value (e.g., from a sensor) */
-    uint16_t *output;    /**< Pointer to controller output value */
+    float *output;    /**< Pointer to controller output value */
     float setpoint;  /**< Pointer to target setpoint value */
 
     float Kp;         /**< Proportional gain */
@@ -74,7 +74,7 @@ typedef struct {
  * @param omin Minimum output limit.
  * @param omax Maximum output limit.
  */
-void pid_create(pid_controller_t *pid, float *in, uint16_t *out, float set, float kp, float ki, float kd, float omin, float omax);
+void pid_create(pid_controller_t *pid, float *in, float *out, float set, float kp, float ki, float kd, float omin, float omax);
 
 /**
  * @brief Computes a new PID output if the sample time has elapsed.
