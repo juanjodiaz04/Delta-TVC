@@ -1,4 +1,5 @@
 #include <stdint.h>
+#include <math.h>
 
 #include "mpu6050.h"
 #include "lib/I2C_driver/i2c_driver.h"
@@ -61,16 +62,16 @@ void mpu6050_init(i2c_inst_t *i2c, uint gpio_sda, uint gpio_scl, mpu6050_data_t 
 
     switch(current_gyro_range) {
         case MPU6050_RANGE_250_DEG:
-            gyro_factor = 131.0f; // Scale factor for ±250 degrees/second
+            gyro_factor = 1.0f/131.0f; // Scale factor for ±250 degrees/second
             break;
         case MPU6050_RANGE_500_DEG:
-            gyro_factor = 65.5f; // Scale factor for ±500 degrees/second
+            gyro_factor = 1.0f/65.5f; // Scale factor for ±500 degrees/second
             break;
         case MPU6050_RANGE_1000_DEG:
-            gyro_factor = 32.8f; // Scale factor for ±1000 degrees/second
+            gyro_factor = 1.0f/32.8f; // Scale factor for ±1000 degrees/second
             break;
         case MPU6050_RANGE_2000_DEG:
-            gyro_factor = 16.4f; // Scale factor for ±2000 degrees/second
+            gyro_factor = 1.0f/16.4f; // Scale factor for ±2000 degrees/second
             break;
     }
 
@@ -80,6 +81,13 @@ void mpu6050_init(i2c_inst_t *i2c, uint gpio_sda, uint gpio_scl, mpu6050_data_t 
     data->gyro_offset_x = 0.0f; // Initialize gyroscope offsets
     data->gyro_offset_y = 0.0f;
     data->gyro_offset_z = 0.0f;
+
+    data->KalmanAngleRoll = 0.0f; // Initialize Kalman filter angles
+    data->KalmanAnglePitch = 0.0f;
+    data->KalmanAngleYaw = 0.0f; // Initialize Kalman filter angles
+    data->KalmanUncertaintyAngleRoll = 2.0f * 2.0f; // Initialize Kalman uncertainties
+    data->KalmanUncertaintyAnglePitch = 2.0f * 2.0f;
+    data->KalmanUncertaintyAngleYaw = 2.0f * 2.0f;
 }
 
 void setAccelerometerRange(mpu6050_accel_range_t afs_sel) {
@@ -164,5 +172,34 @@ void mpu6050_read(mpu6050_data_t *data) {
     data->RateRoll = ((float)data->gyro[0] * gyro_factor) + data->gyro_offset_x; // Scale to degrees per second
     data->RatePitch = ((float)data->gyro[1] * gyro_factor) + data->gyro_offset_y;
     data->RateYaw = ((float)data->gyro[2] * gyro_factor) + data->gyro_offset_z; 
+
+    //raw angles
+    data->AngleRoll = atan(data->AccY / sqrt(data->AccX * data->AccX + data->AccZ * data->AccZ)) * 180.0f / M_PI; // Roll angle in degrees
+    data->AnglePitch = -atan(data->AccX / sqrt(data->AccY * data->AccY + data->AccZ * data->AccZ)) * 180.0f / M_PI; // Pitch angle in degrees
+    data->AngleYaw = 0.0f; // Yaw angle is not calculated
 }
 
+void mpu6050_calibrate_gyro(mpu6050_data_t *data, int samples) {
+    float sum_x = 0.0f, sum_y = 0.0f, sum_z = 0.0f;
+
+    for (int i = 0; i < samples; i++) {
+        mpu6050_read(data); // Read current gyro data
+        sum_x += data->RateRoll; 
+        sum_y += data->RatePitch;
+        sum_z += data->RateYaw;
+        sleep_ms(1); // Delay to allow for stable readings
+    }
+
+    // Calculate average offsets
+    data->gyro_offset_x = - sum_x / samples;
+    data->gyro_offset_y = - sum_y / samples;
+    data->gyro_offset_z = - sum_z / samples;
+}
+
+void mpu6050_calibrate_acc(mpu6050_data_t *data, int samples) {
+    float sum_x = 0.0f, sum_y = 0.0f, sum_z = 0.0f;
+    /**
+     * TODO: Implement accelerometer calibration.
+     * This function should read the accelerometer data multiple times
+     */
+}

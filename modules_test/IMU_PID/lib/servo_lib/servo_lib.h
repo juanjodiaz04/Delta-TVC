@@ -23,6 +23,7 @@ typedef struct {
     uint8_t pin;         /**< GPIO pin connected to the servo signal */
     uint8_t slice_num;   /**< PWM slice number associated with the pin */
     uint32_t top;       /**< PWM TOP value for the configured frequency */
+    uint16_t angle;     /**< Current angle of the servo in degrees (0-180) */
 } servo_t;
 
 /**
@@ -33,7 +34,7 @@ typedef struct {
  * @param servo Pointer to a servo_t structure to configure.
  * @param pin GPIO pin to be used for the servo signal.
  */
-void servo_init(servo_t *servo, uint8_t pin);
+void servo_init(servo_t *servo, uint8_t pin, uint16_t initial_angle);
 
 /**
  * @brief Starts PWM signal and sets servo to an initial angle.
