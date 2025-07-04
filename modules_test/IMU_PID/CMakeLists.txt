@@ -35,7 +35,12 @@ pico_sdk_init()
 
 # Add executable. Default name is the project name, version 0.1
 
-add_executable(IMU_PID IMU_PID.c )
+add_executable(IMU_PID IMU_PID.c
+                lib/PID_lib/PID_lib.c
+                lib/servo_lib/servo_lib.c
+                lib/LSM303D/lsm303D.c
+                lib/mpu6050/mpu6050.c
+                lib/I2C_driver/i2c_driver.c)
 
 pico_set_program_name(IMU_PID "IMU_PID")
 pico_set_program_version(IMU_PID "0.1")
@@ -47,6 +52,14 @@ pico_enable_stdio_usb(IMU_PID 1)
 # Add the standard library to the build
 target_link_libraries(IMU_PID
         pico_stdlib)
+
+# Add any additional libraries you need here
+target_link_libraries(IMU_PID
+        hardware_i2c
+        hardware_pwm
+        hardware_timer
+        hardware_clocks
+        )
 
 # Add the standard include files to the build
 target_include_directories(IMU_PID PRIVATE
