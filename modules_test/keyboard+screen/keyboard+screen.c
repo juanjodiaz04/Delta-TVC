@@ -17,17 +17,232 @@
 #define MAX_INPUT_LENGTH 16  // Maximum characters for number input
 
 /// Intervalo de tiempo para actualizar la pantalla
-#define INTERVALO_MS_UPDATE 100
+#define INTERVALO_MS_UPDATE_SCREEN 1000
 
-/// Bandera para timer de captura de datos
+/// Intervalo para actualizar los servos
+#define INTERVALO_MS_SERVOS 100
+
+///Intervalo para leer IMU
+#define INTERVALO_MS_IMU 10
+
+/// Valor de prueba para la pantalla
 volatile float valor_prueba = 0.0f;
 
 /// Timer para capturar datos desde el UART
-static repeating_timer_t timer_update;
+static repeating_timer_t timer_update_screen;
+
+///Timer para mandar señal servos
+static repeating_timer_t timer_servos;
+
+///Timer para leer IMU
+static repeating_timer_t timer_imu;
 
 ssd1306_t oled;
 
 float ki, kp, kd, setpoint; // PID variables
+
+// Global variables for the state machine
+ssd1306_t oled;
+uint8_t key = 0;
+float ki = 0, kp = 0, kd = 0, setpoint = 0;
+
+// Flags for state machine
+volatile bool flag_read_imu = false;
+volatile bool flag_screen_value_update = false;
+
+// Function prototypes
+void StateMainMenu(void);
+void StatePID(void);
+void StateManual(void);
+void wait_for_key_press(void);
+
+// Screen function prototypes
+void screen_1(ssd1306_t *oled);
+void screen_2(ssd1306_t *oled);
+void screen_IMU_update(ssd1306_t *oled);
+void screen_3(ssd1306_t *oled, const char *message);
+void screen_4(ssd1306_t *oled, const char *param_name, float value);
+void screen_initial_float_conversion(ssd1306_t *oled, const char *prompt);
+void screen_update_float_conversion(ssd1306_t *oled, const char *prompt, const char *input_buffer, char *display_message);
+void screen_confirmation(ssd1306_t *oled, const char *message, float result, char *display_message);
+void screen_params_summary(ssd1306_t *oled, float ki, float kp, float kd, float setpoint);
+void screen_buffer_error(ssd1306_t *oled);
+void screen_decimal_exists_error(ssd1306_t *oled);
+void screen_decimal_before_number_error(ssd1306_t *oled);
+void screen_number_too_long_error(ssd1306_t *oled);
+void screen_reset_input(ssd1306_t *oled, const char *prompt);
+void screen_invalid_char_error(ssd1306_t *oled, const char *prompt, const char *input_buffer, char *display_message);
+
+// Timer callback prototypes
+bool timer_callback_servos(repeating_timer_t *rt);
+bool timer_callback_imu(repeating_timer_t *rt);
+bool timer_callback_screen(repeating_timer_t *rt);
+
+// Utility function prototypes
+float keyboard_to_float(ssd1306_t *oled, const char *prompt);
+
+// Puntero a la función de estado actual
+void (*CurrentState)(void);
+
+//========================================================
+
+bool timer_callback_servos(repeating_timer_t *rt) {
+    // This function should handle servo control logic
+    // For now, just print a message for debugging
+    printf("Servo timer callback triggered\n");
+    return true; // Return true to keep the timer running
+}
+
+
+bool timer_callback_imu(repeating_timer_t *rt) {
+    // This function should handle IMU data reading logic
+
+    flag_read_imu = true; // Set flag to indicate IMU data read needed
+    return true; // Return true to keep the timer running
+}
+
+
+/**
+ * TODO: Cuando tengamos implementado la comunicación entre PICOs
+ * esta función debe ser llamada cada cierto tiempo, se supone que ya
+ * se capturaron los datos de la IMU y se guardaron en alguna variable
+ * global, por lo que aquí solo se actualiza la pantalla.
+ */
+
+
+bool timer_callback_screen(repeating_timer_t *rt) {
+    printf("Updating screen with valor_prueba = %.2f\n", valor_prueba); // Debug
+
+    flag_screen_value_update = true; // Set flag to indicate screen update needed
+    return true; // Return true to keep the timer running
+}
+
+int main()
+{
+    stdio_init_all();
+    sleep_ms(1000); // Wait for the serial console to be ready
+    //=======================================================
+    // Screen initialization
+    //=======================================================
+
+    // I2C screen initialization
+    i2c_setup(I2C_PORT, I2C_SDA, I2C_SCL); // Initialize I2C at 400kHz
+    // Initialize the OLED display
+    oled.external_vcc=false;
+	bool res = ssd1306_init(&oled, 128, 64, 0x3c, i2c0);
+    if(!res)printf("OLED initialization failed!\n");
+
+    ssd1306_clear(&oled);
+    ssd1306_draw_string(&oled, 0, 0, 1, "Hola!");
+    ssd1306_show(&oled);
+    //=======================================================
+    // Keyboard initialization
+    //=======================================================
+    init_mat();
+    //=======================================================
+
+    CurrentState = StateMainMenu;
+
+    while (true) {
+        CurrentState(); // Llamar estado actual
+    }    
+}
+
+
+void StateMainMenu(void) {
+    screen_1(&oled);
+
+    if (get_key_flag()) {
+        while (!read_mat(&key));
+        printf("Key pressed: %c \n", key);
+
+        if (key == '1') {
+            screen_2(&oled);
+            add_repeating_timer_ms(INTERVALO_MS_UPDATE_SCREEN, timer_callback_screen, NULL, &timer_update_screen);
+            add_repeating_timer_ms(INTERVALO_MS_SERVOS, timer_callback_servos, NULL, &timer_servos);
+            add_repeating_timer_ms(INTERVALO_MS_IMU, timer_callback_imu, NULL, &timer_imu);
+            CurrentState = StatePID;
+        } else if (key == '2') {
+            CurrentState = StateManual;
+        }
+    }
+}
+
+void StatePID(void) {
+    if(flag_screen_value_update) {
+        flag_screen_value_update = false; // Reset the flag after updating the screen
+        screen_IMU_update(&oled);
+    }
+    else if(flag_read_imu) {
+        flag_read_imu = false; // Reset the flag after reading IMU
+        valor_prueba += 0.1f; // Simulate some data capture
+        if(valor_prueba > 200.0f) {
+            valor_prueba = 0.0f; // Reset after reaching a threshold
+        }
+    }
+    if (get_key_flag()) {
+        while (!read_mat(&key));
+        if (key == '#') {
+            cancel_repeating_timer(&timer_update_screen);
+            cancel_repeating_timer(&timer_servos);
+            cancel_repeating_timer(&timer_imu);
+            screen_1(&oled);
+            
+            CurrentState = StateMainMenu;
+        }
+    }
+}
+
+void wait_for_key_press() {
+    key = 0;
+    while (key == 0) {
+        if (get_key_flag()) {
+            while (!read_mat(&key));
+        }
+        sleep_ms(50);
+    }
+}
+
+void StateManual(void) {
+    ki = keyboard_to_float(&oled, "Adjust Ki");
+    screen_4(&oled, "Ki", ki);
+    wait_for_key_press();
+
+    kp = keyboard_to_float(&oled, "Adjust Kp");
+    screen_4(&oled, "Kp", kp);
+    wait_for_key_press();
+
+    kd = keyboard_to_float(&oled, "Adjust Kd");
+    screen_4(&oled, "Kd", kd);
+    wait_for_key_press();
+
+    setpoint = keyboard_to_float(&oled, "Adjust setpoint");
+    screen_4(&oled, "Setpoint", setpoint);
+    wait_for_key_press();
+
+    screen_params_summary(&oled, ki, kp, kd, setpoint);
+
+    key = 0;
+    while (key == 0) {
+        if (get_key_flag()) {
+            while (!read_mat(&key));
+            if (key == '*') {
+                screen_1(&oled);
+                CurrentState = StateMainMenu;
+            } else if (key == '#') {
+                screen_2(&oled);
+                add_repeating_timer_ms(INTERVALO_MS_UPDATE_SCREEN, timer_callback_screen, NULL, &timer_update_screen);
+                add_repeating_timer_ms(INTERVALO_MS_SERVOS, timer_callback_servos, NULL, &timer_servos);
+                add_repeating_timer_ms(INTERVALO_MS_IMU, timer_callback_imu, NULL, &timer_imu);
+                CurrentState = StatePID;
+            }
+        }
+        sleep_ms(50);
+    }
+}
+
+
+
 
 /**
  * TODO: This functions should be in the oled library. 
@@ -48,25 +263,35 @@ void screen_2(ssd1306_t *oled){
     ssd1306_draw_string(oled, 0, 0, 1, "Automatic Mode");
     ssd1306_draw_string(oled, 0, 10, 1, "Ac_x = 0.00");
     ssd1306_draw_string(oled, 0, 20, 1, "Ac_y = 0.00");
-    ssd1306_draw_string(oled, 0, 30, 1, "Ac_z = 0.00");
     ssd1306_draw_string(oled, 0, 40, 1, "Gy_x = 0.00");
     ssd1306_draw_string(oled, 0, 50, 1, "Gy_y = 0.00");
-    ssd1306_draw_string(oled, 0, 60, 1, "Gy_z = 0.00");
     ssd1306_show(oled);
 }
 
 void screen_IMU_update(ssd1306_t *oled){
-    ssd1306_clear(oled);
-    ssd1306_draw_string(oled, 0, 0, 1, "Automatic Mode");
+    // ssd1306_clear(oled);
+    // ssd1306_draw_string(oled, 0, 0, 1, "Automatic Mode");
+    // char buffer[32];
+    // snprintf(buffer, sizeof(buffer), "Ac_x = %.2f", valor_prueba);
+    // ssd1306_draw_string(oled, 0, 10, 1, buffer);
+    // snprintf(buffer, sizeof(buffer), "Ac_y = %.2f", valor_prueba*2);
+    // ssd1306_draw_string(oled, 0, 20, 1, buffer);
+    // snprintf(buffer, sizeof(buffer), "Gy_x = %.2f", valor_prueba*3);
+    // ssd1306_draw_string(oled, 0, 40, 1, buffer);
+    // snprintf(buffer, sizeof(buffer), "Gy_y = %.2f", valor_prueba*4);
+    // ssd1306_draw_string(oled, 0, 50, 1, buffer);
+    // ssd1306_show(oled);
+
     char buffer[32];
-    snprintf(buffer, sizeof(buffer), "Ac_x = %.2f", valor_prueba);
-    ssd1306_draw_string(oled, 0, 10, 1, buffer);
-    snprintf(buffer, sizeof(buffer), "Ac_y = %.2f", valor_prueba*2);
-    ssd1306_draw_string(oled, 0, 20, 1, buffer);
-    snprintf(buffer, sizeof(buffer), "Gy_x = %.2f", valor_prueba*3);
-    ssd1306_draw_string(oled, 0, 40, 1, buffer);
-    snprintf(buffer, sizeof(buffer), "Gy_y = %.2f", valor_prueba*4);
-    ssd1306_draw_string(oled, 0, 50, 1, buffer);
+    snprintf(buffer, sizeof(buffer), " %.2f", valor_prueba);
+    ssd1306_clear_square(oled, 35, 10, 64, 54); // Clear the area for new data
+    ssd1306_draw_string(oled, 35, 10, 1, buffer);
+    snprintf(buffer, sizeof(buffer), " %.2f", valor_prueba*2);
+    ssd1306_draw_string(oled, 35, 20, 1, buffer);
+    snprintf(buffer, sizeof(buffer), " %.2f", valor_prueba*3);
+    ssd1306_draw_string(oled, 35, 40, 1, buffer);
+    snprintf(buffer, sizeof(buffer), " %.2f", valor_prueba*4);
+    ssd1306_draw_string(oled, 35, 50, 1, buffer);
     ssd1306_show(oled);
 }
 
@@ -191,8 +416,6 @@ void screen_invalid_char_error(ssd1306_t *oled, const char *prompt, const char *
     // Redraw current input
     screen_update_float_conversion(oled, prompt, input_buffer, display_message);
 
-
-
 }
 
 /**
@@ -220,7 +443,7 @@ float keyboard_to_float(ssd1306_t *oled, const char *prompt) {
                 if (buffer_index < MAX_INPUT_LENGTH) {
                     input_buffer[buffer_index] = key;
                     buffer_index++;
-                    input_buffer[buffer_index] = '\0';  // Null terminate
+                    input_buffer[buffer_index] = '\0';  
                     
                     // Update screen
                     screen_update_float_conversion(oled, prompt, input_buffer, display_message);
@@ -251,7 +474,7 @@ float keyboard_to_float(ssd1306_t *oled, const char *prompt) {
                     } else {
                         screen_number_too_long_error(oled);}
                     
-                    sleep_ms(2000);  // Show error for 2 seconds
+                    sleep_ms(200);  // Show error
                     
                     // Redraw current input
                     screen_update_float_conversion(oled, prompt, input_buffer, display_message);
@@ -262,7 +485,7 @@ float keyboard_to_float(ssd1306_t *oled, const char *prompt) {
                 if (buffer_index > 0) {
                     // Check if the last character is a decimal point
                     if (input_buffer[buffer_index - 1] == '.') {
-                        // Remove trailing decimal point
+                        // Remove decimal point
                         input_buffer[buffer_index - 1] = '\0';
                         buffer_index--;
                         has_decimal = false;
@@ -273,7 +496,7 @@ float keyboard_to_float(ssd1306_t *oled, const char *prompt) {
                     
                     // Show confirmation
                     screen_confirmation(oled, prompt, result, display_message);
-                    sleep_ms(1500);  // Show confirmation for 1.5 seconds
+                    sleep_ms(500);  // Show confirmation
                     
                     return result;
                 } else {
@@ -284,180 +507,17 @@ float keyboard_to_float(ssd1306_t *oled, const char *prompt) {
                     
                     // Show reset message
                     screen_reset_input(oled, prompt);
-                    sleep_ms(1000);  // Show reset message for 1 second
+                    sleep_ms(150);  // Show reset message for 1 second
                 }
             }
             // Invalid character (letters A, B, C, D)
             else if (key >= 'A' && key <= 'D') {
                 // Show error for invalid characters
                 screen_invalid_char_error(oled, prompt, input_buffer, display_message);
-                sleep_ms(2000);  // Show error for 2 seconds
+                sleep_ms(200);  // Show error for 2 seconds
             }
         }
         
-        sleep_ms(50);  // Small delay to avoid overwhelming the system
-    }
-}
-
-/**
- * TODO: Cuando tengamos implementado la comunicación entre PICOs
- * esta función debe ser llamada cada cierto tiempo, se supone que ya
- * se capturaron los datos de la IMU y se guardaron en alguna variable
- * global, por lo que aquí solo se actualiza la pantalla.
- */
-bool timer_callback(repeating_timer_t *rt) {
-    valor_prueba += 0.1f; // Simulate some data capture
-    if(valor_prueba > 6.0f) {
-        valor_prueba = 0.0f; // Reset after reaching a threshold
-    }
-    screen_IMU_update(&oled);
-}
-
-
-
-
-int main()
-{
-    stdio_init_all();
-    sleep_ms(1000); // Wait for the serial console to be ready
-    //=======================================================
-    // Screen initialization
-    //=======================================================
-
-    // I2C screen initialization
-    i2c_setup(I2C_PORT, I2C_SDA, I2C_SCL); // Initialize I2C at 400kHz
-    // Initialize the OLED display
-    oled.external_vcc=false;
-	bool res = ssd1306_init(&oled, 128, 64, 0x3c, i2c0);
-    if(!res)printf("OLED initialization failed!\n");
-
-    ssd1306_clear(&oled);
-    ssd1306_draw_string(&oled, 0, 0, 1, "Hola!");
-    ssd1306_show(&oled);
-    //=======================================================
-    // Keyboard initialization
-    //=======================================================
-    init_mat();
-    //=======================================================
-
-    uint8_t state = 0;
-    uint8_t key=0;
-    
-    while (true) {
-        char message[32];
-        
-        printf("Hello, world!\n");
-
-        /**
-         * TODO: Review how to wait for a key press
-         */
-        if(get_key_flag()){
-            while (!read_mat(&key));
-            printf("Key pressed: %c \n", key);
-        }
-        
-
-        switch (state) {
-            case 0: // Main menu
-                screen_1(&oled);
-                if (key == '1') {
-                    state = 1; // Go to automatic mode
-                    screen_2(&oled);
-                    add_repeating_timer_ms(INTERVALO_MS_UPDATE, timer_callback, NULL, &timer_update);
-                } else if (key == '2') {
-                    state = 2; // Go to manual mode
-                    
-                }
-                break;
-            case 1: // Automatic mode
-                //screen_IMU_update(&oled);
-
-                if (key == '#') {
-                    state = 0; // Go to main menu
-                    screen_1(&oled);
-                    cancel_repeating_timer(&timer_update); // Stop the timer
-                }
-                break;
-            case 2: // Manual mode
-                // Adjust Ki
-                ki = keyboard_to_float(&oled, "Adjust Ki");
-                screen_4(&oled, "Ki", ki);
-                
-                /**
-                 * TODO: Review how to wait for a key press
-                 */
-
-                // Wait for any key to continue
-                key = 0;
-                while (key == 0) {
-                    if (get_key_flag()) {
-                        while (!read_mat(&key));
-                    }
-                    sleep_ms(50);
-                }
-                
-                // Adjust Kp
-                kp = keyboard_to_float(&oled, "Adjust Kp");
-                screen_4(&oled, "Kp", kp);
-                
-                // Wait for any key to continue
-                key = 0;
-                while (key == 0) {
-                    if (get_key_flag()) {
-                        while (!read_mat(&key));
-                    }
-                    sleep_ms(50);
-                }
-                
-                // Adjust Kd
-                kd = keyboard_to_float(&oled, "Adjust Kd");
-                screen_4(&oled, "Kd", kd);
-                
-                // Wait for any key to continue
-                key = 0;
-                while (key == 0) {
-                    if (get_key_flag()) {
-                        while (!read_mat(&key));
-                    }
-                    sleep_ms(50);
-                }
-                
-                // Adjust setpoint
-                setpoint = keyboard_to_float(&oled, "Adjust setpoint");
-                screen_4(&oled, "Setpoint", setpoint);
-                
-                // Wait for any key to continue
-                key = 0;
-                while (key == 0) {
-                    if (get_key_flag()) {
-                        while (!read_mat(&key));
-                    }
-                    sleep_ms(50);
-                }
-                
-                // Show all parameters summary
-                screen_params_summary(&oled, ki, kp, kd, setpoint);
-
-                key = 0;
-                while (key == 0) {
-                    if (get_key_flag()) {
-                        while (!read_mat(&key));
-                        // Wait for # to return to main menu
-                        if (key == '#') {
-                            state = 0;
-                            screen_1(&oled);
-                        }
-                    }
-                    sleep_ms(50);
-                }            
-                            
-                break;
-            default:
-                state = 0; // Reset to main menu if an unknown state is reached
-                break;
-        }
-        
-
-        sleep_ms(100);
+        sleep_ms(50);  
     }
 }
