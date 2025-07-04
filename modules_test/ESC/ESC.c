@@ -1,45 +1,44 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include "pico/stdlib.h"
 #include "lib/ESC_lib/ESC_lib.h"
 
 int main() {
-    // Inicializar el sistema estándar de entrada/salida
     stdio_init_all();
 
-    // Crear e inicializar el ESC
     esc_t my_esc;
-    esc_init(&my_esc, 15, 50, 64.0f );
-    esc_write_speed(&my_esc, 0); // Pulso minimo para iniciar el ESC
+    esc_init(&my_esc, 15, 50, 64.0f); // GPIO 15, 50 Hz, clkdiv 64
+    esc_write_speed(&my_esc, 0);
+    sleep_ms(2000);  // Tiempo para armar el ESC
 
-    // Esperar a que el ESC esté listo (algunos requieren armarse)
-    sleep_ms(2000);
+    printf("Listo. Escribe un valor entre 0 y 100 y presiona Enter:\n");
 
-    // Barrido 
-    uint8_t duty = 0;
-    uint64_t last_update = time_us_64();
-    bool barrido_completo = false;
-
-    // Establecer velocidad inicial
-    esc_write_speed(&my_esc, duty);
-    printf("Speed: %u%%\n", duty);
+    char buffer[16];
+    int index = 0;
 
     while (true) {
-        uint64_t now = time_us_64();
+        int c = getchar_timeout_us(0);  // Lectura no bloqueante
 
-        if (!barrido_completo && now - last_update >= 2000000) {  // 2 segundos
-            duty += 10;
-            if (duty > 100) {
-                duty = 50;
-                barrido_completo = true;
-                printf("Duty cycle estable en 50%%\n");
-                esc_write_speed(&my_esc, duty);
-            } else {
-                esc_write_speed(&my_esc, duty);
-                printf("Duty cycle: %u%%\n", duty);
+        if (c != PICO_ERROR_TIMEOUT) {
+            if (c == '\r' || c == '\n') {
+                buffer[index] = '\0';
+                int speed = atoi(buffer);
+
+                if (speed >= 0 && speed <= 100) {
+                    esc_write_speed(&my_esc, (uint8_t)speed);
+                    printf("Velocidad aplicada: %d%%\n", speed);
+                } else {
+                    printf("Valor inválido: %d. Debe ser entre 0 y 100.\n", speed);
+                }
+
+                index = 0;
+                printf("> ");
+            } else if (index < sizeof(buffer) - 1) {
+                buffer[index++] = (char)c;
             }
-            last_update = now;
         }
 
+        tight_loop_contents();  // Bajo consumo
     }
 
     return 0;
