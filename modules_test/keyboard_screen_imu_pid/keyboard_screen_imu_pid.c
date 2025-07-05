@@ -12,6 +12,8 @@
 #include "lib/servo_lib/servo_lib.h"
 #include "lib/pid_lib/pid_lib.h"
 
+#include "lib/ESC_lib/ESC_lib.h"
+
 #include <string.h>  // Added for string functions
 #include <stdlib.h>
 
@@ -46,6 +48,8 @@
 #define ROLL_SETPOINT 0
 #define PITCH_SETPOINT 0
 
+#define ESC_PIN 10 // GPIO pin for ESC control
+
 const float angle_roll_offset = 3.4f;
 const float angle_pitch_offset = -0.3f;
 
@@ -69,6 +73,8 @@ servo_t servo_roll;
 servo_t servo_pitch;
 mpu6050_data_t mpu6050_data;
 
+esc_t my_esc;
+
 // Variables para las salidas del PID
 float pid_output_roll = 0.0f;
 float pid_output_pitch = 0.0f;
@@ -83,6 +89,8 @@ float ki = 0, kp = 0, kd = 0, setpoint = 0;
 // Flags for state machine
 volatile bool flag_read_imu = false;
 volatile bool flag_screen_value_update = false;
+
+uint8_t speed = 0; // Variable to hold ESC speed 
 
 // Function prototypes
 void StateMainMenu(void);
@@ -212,7 +220,10 @@ int main()
     //=======================================================
     init_mat();
     //=======================================================
-
+    // Initialize the ESC
+    //=======================================================
+    esc_init(&my_esc, ESC_PIN, 50, 64.0f); // GPIO 15, 50 Hz, clkdiv 64
+    esc_write_speed(&my_esc, 0);
     CurrentState = StateMainMenu;
 
     while (true) {
@@ -230,6 +241,7 @@ void StateMainMenu(void) {
 
         if (key == '1') {
             screen_2(&oled);
+            esc_write_speed(&my_esc, 30);
             add_repeating_timer_ms(INTERVALO_MS_UPDATE_SCREEN, timer_callback_screen, NULL, &timer_update_screen);
             add_repeating_timer_ms(INTERVALO_MS_PID, PID_callback, NULL, &timer_PID);
             add_repeating_timer_ms(INTERVALO_MS_IMU, timer_callback_imu, NULL, &timer_imu);
@@ -263,6 +275,7 @@ void StatePID(void) {
     if (get_key_flag()) {
         while (!read_mat(&key));
         if (key == '#') {
+            //esc_write_speed(&my_esc, 0); // Stop the ESC
             cancel_repeating_timer(&timer_update_screen);
             cancel_repeating_timer(&timer_PID);
             cancel_repeating_timer(&timer_imu);
@@ -304,6 +317,10 @@ void StateManual(void) {
     screen_4(&oled, "Setpoint", setpoint);
     wait_for_key_press();
 
+    speed = (uint8_t)keyboard_to_float(&oled, "Adjust ESC speed");
+    screen_4(&oled, "Speed", speed);
+    wait_for_key_press();
+
     screen_params_summary(&oled, ki, kp, kd, setpoint);
 
     while (!get_key_flag()){tight_loop_contents();}
@@ -315,6 +332,7 @@ void StateManual(void) {
         } else if (key == '#') {
             pid_tune(&pid_controller_roll, kp, ki, kd);
             pid_tune(&pid_controller_pitch, kp, ki, kd);
+            esc_write_speed(&my_esc, speed);
             screen_2(&oled);
             add_repeating_timer_ms(INTERVALO_MS_UPDATE_SCREEN, timer_callback_screen, NULL, &timer_update_screen);
             add_repeating_timer_ms(INTERVALO_MS_PID, PID_callback, NULL, &timer_PID);

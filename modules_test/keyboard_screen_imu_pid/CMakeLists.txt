@@ -42,7 +42,8 @@ add_executable(keyboard_screen_imu_pid keyboard_screen_imu_pid.c
                 lib/PID_lib/PID_lib.c
                 lib/servo_lib/servo_lib.c
                 lib/mpu6050/mpu6050.c
-                lib/kalman_filter/kalman_filter.c)
+                lib/kalman_filter/kalman_filter.c
+                lib/esc_lib/esc_lib.c)
 
 pico_set_program_name(keyboard_screen_imu_pid "keyboard_screen_imu_pid")
 pico_set_program_version(keyboard_screen_imu_pid "0.1")
