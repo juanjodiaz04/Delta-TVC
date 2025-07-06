@@ -2,6 +2,7 @@
 #include "stdio.h"
 #include "../mpu6050/mpu6050.h"
 
+
 void screen_1(ssd1306_t *oled);
 void screen_2(ssd1306_t *oled);
 void screen_IMU_update(ssd1306_t *oled, mpu6050_data_t *mpu6050_data, float angle_roll_offset, float angle_pitch_offset, float current);

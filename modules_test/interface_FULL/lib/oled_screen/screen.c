@@ -151,10 +151,7 @@ void screen_reset_input(ssd1306_t *oled, const char *prompt) {
     ssd1306_draw_string(oled, 0, 20, 1, "Start over...");
     ssd1306_show(oled);
 
-    sleep_ms(1000);  // Show reset message for 1 second
-    
-    // Redraw initial screen
-    screen_initial_float_conversion(oled, prompt);
+
 }
 
 void screen_invalid_char_error(ssd1306_t *oled, const char *prompt, const char *input_buffer, char *display_message) {
@@ -164,10 +161,5 @@ void screen_invalid_char_error(ssd1306_t *oled, const char *prompt, const char *
     ssd1306_draw_string(oled, 0, 20, 1, "Use numbers only");
     ssd1306_draw_string(oled, 0, 40, 1, "Continue typing...");
     ssd1306_show(oled);
-
-    sleep_ms(2000);  // Show error for 2 seconds
-
-    // Redraw current input
-    screen_update_float_conversion(oled, prompt, input_buffer, display_message);
 
 }

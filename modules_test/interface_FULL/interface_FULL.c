@@ -19,49 +19,46 @@
 
 #include "lib/ADC/adc.h"
 
-#include <string.h>  // Added for string functions
+#include <string.h>
 #include <stdlib.h>
 
 // I2C IMU
-#define I2C_PORT i2c1
-#define I2C_SDA 14
-#define I2C_SCL 15
+#define I2C_PORT i2c1 ///< I2C port for MPU6050
+#define I2C_SDA 14 ///< I2C SDA pin for MPU6050
+#define I2C_SCL 15 ///< I2C SCL pin for MPU6050
 // I2C Display
-#define I2C_PORT_OLED i2c0
-#define I2C_SDA_OLED 20
-#define I2C_SCL_OLED 21
+#define I2C_PORT_OLED i2c0 ///< I2C port for OLED display
+#define I2C_SDA_OLED 20 ///< I2C SDA pin for OLED display
+#define I2C_SCL_OLED 21 ///< I2C SCL pin for OLED display
 
-#define MAX_INPUT_LENGTH 16  // Maximum characters for number input
+#define MAX_INPUT_LENGTH 16  ///< Maximum characters for number input
 
-/// Intervalo de tiempo para actualizar la pantalla
-#define INTERVALO_MS_UPDATE_SCREEN 1000
+#define INTERVALO_MS_UPDATE_SCREEN 1000 ///< Intervalo de tiempo para actualizar la pantalla
 
-/// Intervalo para actualizar los servos
-#define INTERVALO_MS_PID 100
+#define INTERVALO_MS_PID 100 ///< Intervalo para el PID
 
-///Intervalo para leer IMU
-#define INTERVALO_MS_IMU 10
+#define INTERVALO_MS_IMU 10 ///< Intervalo para leer el IMU
 
-#define UPDATE_RATE_S (INTERVALO_MS_IMU / 1000.0f)  // Update rate in seconds
+#define UPDATE_RATE_S (INTERVALO_MS_IMU / 1000.0f)  ///< Update rate in seconds
 
-#define ROLL_SERVO_PIN 18
-#define PITCH_SERVO_PIN 19
+#define ROLL_SERVO_PIN 18 ///< GPIO pin for roll servo control
+#define PITCH_SERVO_PIN 19 ///< GPIO pin for pitch servo control
 
-#define PID_OFFSET 90
-#define PITCH_OFFSET 110
+#define PID_OFFSET 90 ///< Offset for servo angles to center them at 90 degrees
+#define PITCH_OFFSET 110 ///< Offset for pitch servo angles to center them at 110 degrees
 
-#define ROLL_SETPOINT 0
-#define PITCH_SETPOINT 0
+#define ROLL_SETPOINT 0 ///< Initial setpoint for roll angle in degrees
+#define PITCH_SETPOINT 0 ///< Initial setpoint for pitch angle in degrees
 
-#define ESC_PIN 10 // GPIO pin for ESC control
+#define ESC_PIN 10 ///< GPIO pin for ESC control
 
-#define CURRENT_SENSOR_PIN 26 // GPIO pin for current sensor (ADC)
+#define CURRENT_SENSOR_PIN 26 ///< GPIO pin for current sensor (ADC)
 
-const float angle_roll_offset = 3.4f;
-const float angle_pitch_offset = -0.3f;
+const float angle_roll_offset = 3.4f; ///< Offset for roll angle in degrees
+const float angle_pitch_offset = -0.3f; ///< Offset for pitch angle in degrees
 
-const float V_OFFSET = 1.65f;     // Asumimos Vcc = 3.3 V
-const float SENSITIVITY = 0.185f;       // 185 mV/A para ACS712-05A
+const float V_OFFSET = 1.65f;     ///< Asumimos Vcc = 3.3 V
+const float SENSITIVITY = 0.185f;  ///< 185 mV/A para ACS712-05A
 
 /// Timer para capturar datos desde el UART
 static repeating_timer_t timer_update_screen;
@@ -72,62 +69,88 @@ static repeating_timer_t timer_PID;
 ///Timer para leer IMU
 static repeating_timer_t timer_imu;
 
-adc_t adc_sensor;
+adc_t adc_sensor; ///< ADC structure for current sensor
 
-pid_controller_t pid_controller_roll;
-pid_controller_t pid_controller_pitch;
-servo_t servo_roll;
-servo_t servo_pitch;
-mpu6050_data_t mpu6050_data;
+pid_controller_t pid_controller_roll; ///< PID controller for roll angle
+pid_controller_t pid_controller_pitch; ///< PID controller for pitch angle
+servo_t servo_roll; ///< Servo for roll control
+servo_t servo_pitch; ///< Servo for pitch control
+mpu6050_data_t mpu6050_data; ///< MPU6050 data structure
 
-esc_t my_esc;
-
+esc_t my_esc; ///< ESC structure for motor control
+ 
 // Variables para las salidas del PID
-float pid_output_roll = 0.0f;
-float pid_output_pitch = 0.0f;
+float pid_output_roll = 0.0f; ///< PID output for roll angle
+float pid_output_pitch = 0.0f; ///< PID output for pitch angle
 
-float ki, kp, kd, setpoint; // PID variables
+ssd1306_t oled; ///< OLED display structure
+uint8_t key = 0; ///< Variable to hold the key pressed
+float ki = 0, kp = 0, kd = 0, setpoint = 0; ///< PID variables
 
-// Global variables for the state machine
-ssd1306_t oled;
-uint8_t key = 0;
-float ki = 0, kp = 0, kd = 0, setpoint = 0;
+uint8_t speed = 0; ///< Variable to hold ESC speed 
 
 // Flags for state machine
-volatile bool flag_read_imu = false;
-volatile bool flag_screen_value_update = false;
+volatile bool flag_read_imu = false; ///< Flag to indicate IMU data read needed
+volatile bool flag_screen_value_update = false; ///< Flag to indicate screen update needed
 
-uint8_t speed = 0; // Variable to hold ESC speed 
 
-// Function prototypes
+/** 
+ * @brief Function to handle the main menu state.
+ * This function displays the main menu on the OLED screen and waits for user input.
+ * It allows the user to select different modes such as PID control, manual control.
+*/
 void StateMainMenu(void);
+
+/**
+ * @brief Function to handle the PID control state.
+ * This function displays the accelerometer, angles, and current sensor values on the OLED screen.
+ * It also updates the PID controller outputs and servo angles based on the IMU data.
+ */
 void StatePID(void);
+
+/**
+ * @brief This function allows the user to set the PID parameters and ESC speed through the keyboard.
+ */
 void StateManual(void);
+
+/**
+ * @brief Function to wait for a key press from the user.
+ * This function displays a message on the OLED screen and waits for the user to press a key
+ */
 void wait_for_key_press(void);
 
-
-// Timer callback prototypes
+/**
+ * @brief Function to handle the PID compute callback.
+ * This function is called periodically to compute the PID outputs for roll and pitch angles.
+ */
 bool timer_callback_PID(repeating_timer_t *rt);
+
+/**
+ * @brief Function to handle the IMU data reading callback.
+ */
 bool timer_callback_imu(repeating_timer_t *rt);
+
+/**
+ * @brief Function to handle the screen update callback.
+ * This function is called periodically to update the OLED screen with the latest IMU data and current sensor values.
+ */
 bool timer_callback_screen(repeating_timer_t *rt);
 
-// Utility function prototypes
+/**
+ * @brief Function to convert keyboard input to a float value.
+ */
 float keyboard_to_float(ssd1306_t *oled, const char *prompt);
 
-// Puntero a la función de estado actual
-void (*CurrentState)(void);
+void (*CurrentState)(void); ///< Pointer to the current state function
 
 //========================================================
 
 bool PID_callback(repeating_timer_t *rt) {
     pid_compute(&pid_controller_roll);
     pid_compute(&pid_controller_pitch);
-    // servo_set_angle(&servo_roll, (uint8_t)(*pid_controller_roll.output + ROLL_OFFSET));
-    // servo_set_angle(&servo_pitch, (uint8_t)(*pid_controller_pitch.output + PITCH_OFFSET));
+
     servo_set_angle(&servo_roll, (uint8_t)(pid_output_roll + PID_OFFSET));
     servo_set_angle(&servo_pitch, (uint8_t)(pid_output_pitch + PID_OFFSET));
-    //printf(" Roll:%f, Pitch:%f\n", *(pid_controller_roll.output) + ROLL_OFFSET, *(pid_controller_pitch.output) + PITCH_OFFSET);
-    //printf(" Roll:%f, Pitch:%f\n", pid_output_roll + PID_OFFSET, pid_output_pitch + PID_OFFSET);
     //angulos del servo
     printf("Roll Servo Angle: %d, Pitch Servo Angle: %d\n", 
         servo_roll.angle, servo_pitch.angle);
@@ -162,8 +185,6 @@ int main()
     servo_start(&servo_roll, 90); // Start the servo at 90 degrees
     servo_start(&servo_pitch, 90); // Start the servo at 90 degrees
 
-    // pid_create(&pid_controller_roll, &mpu6050_data.KalmanAngleRoll, &servo_roll.angle, ROLL_SETPOINT, 100.0f, 0.0f, 0.0f, -20.0f, 20.0f);
-    // pid_create(&pid_controller_pitch, &mpu6050_data.KalmanAnglePitch, &servo_pitch.angle, PITCH_SETPOINT, 100.0f, 0.0f, 0.0f, -30.0f, 30.0f);
     pid_create(&pid_controller_roll, &mpu6050_data.KalmanAngleRoll, &pid_output_roll, ROLL_SETPOINT, 
         30.0f, 3.0f, 0.0f, -30.0f, 10.0f);
     pid_create(&pid_controller_pitch, &mpu6050_data.KalmanAnglePitch, &pid_output_pitch, PITCH_SETPOINT, 
@@ -326,13 +347,6 @@ void StateManual(void) {
     
 }
 
-
-
-
-
-
-
-
 /**
  * TODO: Change sleeps by timers or other technique.
  */
@@ -422,14 +436,21 @@ float keyboard_to_float(ssd1306_t *oled, const char *prompt) {
                     
                     // Show reset message
                     screen_reset_input(oled, prompt);
-                    sleep_ms(150);  // Show reset message for 1 second
+                    sleep_ms(1000);  // Show reset message for 1 second
+    
+                    // Redraw initial screen
+                    screen_initial_float_conversion(oled, prompt);
                 }
             }
             // Invalid character (letters A, B, C, D)
             else if (key >= 'A' && key <= 'D') {
                 // Show error for invalid characters
                 screen_invalid_char_error(oled, prompt, input_buffer, display_message);
-                sleep_ms(200);  // Show error for 2 seconds
+
+                sleep_ms(2000);  // Show error for 2 seconds
+
+                // Redraw current input
+                screen_update_float_conversion(oled, prompt, input_buffer, display_message);
             }
         }
     }else {
