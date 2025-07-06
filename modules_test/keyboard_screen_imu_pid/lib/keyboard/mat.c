@@ -10,7 +10,6 @@
 
 static volatile uint8_t reading; /*!< Momento de lectura del teclado. */
 static volatile uint8_t gpio_pressed; /*!< GPIO que genera la interrupción. */
-
 static volatile bool keyFlag; /*!< Bandera para indicar si se ha presionado una tecla. */
   /**
  * @brief Función que se ejecuta cuando se presiona una tecla
@@ -80,7 +79,6 @@ bool read_mat(volatile uint8_t* value){
     */
     static uint32_t start;
     if(reading==1){// Ha recibido una interrupción, pasa a modo scanning
-        printf("Paso 1: interrupción recibida en GPIO %d\n", gpio_pressed);
         gpio_put_masked(MAT_WRITE_PINS,0);
         set_dirs_mat(true);
         gpio_put(gpio_pressed,true);

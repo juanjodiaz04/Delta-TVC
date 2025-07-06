@@ -83,7 +83,7 @@ bool read_mat(volatile uint8_t* value){
         set_dirs_mat(true);
         gpio_put(gpio_pressed,true);
         reading=2;
-        keyFlag = false; // Resetea la bandera de tecla presionada
+        
     }
     else if(reading==2){
         char dic_mat[16]={'1','2','3','A','4','5','6','B','7','8','9','C','*','0','#','D'};
@@ -108,6 +108,7 @@ bool read_mat(volatile uint8_t* value){
         if(gpio_get(gpio_pressed)==1){reading=3;}
         else{
             reading=0;
+            keyFlag = false; // Resetea la bandera de tecla presionada
             return true;
         }
     }

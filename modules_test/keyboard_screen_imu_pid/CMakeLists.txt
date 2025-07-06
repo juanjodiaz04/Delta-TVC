@@ -36,8 +36,9 @@ pico_sdk_init()
 # Add executable. Default name is the project name, version 0.1
 
 add_executable(keyboard_screen_imu_pid keyboard_screen_imu_pid.c
-            lib/ssd1306.c
-            lib/mat.c 
+            lib/oled_screen/ssd1306.c
+            lib/oled_screen/screen.c
+            lib/keyboard/mat.c 
             lib/I2C_driver/i2c_driver.c
                 lib/PID_lib/PID_lib.c
                 lib/servo_lib/servo_lib.c

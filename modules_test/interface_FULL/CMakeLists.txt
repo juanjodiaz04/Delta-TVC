@@ -35,7 +35,16 @@ pico_sdk_init()
 
 # Add executable. Default name is the project name, version 0.1
 
-add_executable(interface_FULL interface_FULL.c )
+add_executable(interface_FULL interface_FULL.c
+            lib/oled_screen/ssd1306.c
+            lib/oled_screen/screen.c
+            lib/keyboard/mat.c 
+            lib/I2C_driver/i2c_driver.c
+                lib/PID_lib/PID_lib.c
+                lib/servo_lib/servo_lib.c
+                lib/mpu6050/mpu6050.c
+                lib/kalman_filter/kalman_filter.c
+                lib/esc_lib/esc_lib.c)
 
 pico_set_program_name(interface_FULL "interface_FULL")
 pico_set_program_version(interface_FULL "0.1")
@@ -55,8 +64,11 @@ target_include_directories(interface_FULL PRIVATE
 
 # Add any user requested libraries
 target_link_libraries(interface_FULL 
+        pico_stdlib
+        hardware_i2c
+        hardware_timer
+        hardware_pwm
+        hardware_clocks)
         
-        )
-
 pico_add_extra_outputs(interface_FULL)
 

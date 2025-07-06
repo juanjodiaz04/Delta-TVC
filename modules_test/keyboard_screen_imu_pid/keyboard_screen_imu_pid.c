@@ -2,8 +2,11 @@
 #include "pico/stdlib.h"
 #include "hardware/i2c.h"
 #include "hardware/timer.h"
-#include "lib/ssd1306.h"
-#include "lib/mat.h"
+
+#include "lib/oled_screen/ssd1306.h"
+#include "lib/oled_screen/screen.h"
+
+#include "lib/keyboard/mat.h"
 #include "lib/I2C_driver/i2c_driver.h"
 
 #include "lib/mpu6050/mpu6050.h"
@@ -53,9 +56,6 @@
 const float angle_roll_offset = 3.4f;
 const float angle_pitch_offset = -0.3f;
 
-/// Valor de prueba para la pantalla
-volatile float valor_prueba = 0.0f;
-
 /// Timer para capturar datos desde el UART
 static repeating_timer_t timer_update_screen;
 
@@ -99,21 +99,21 @@ void StateManual(void);
 void wait_for_key_press(void);
 
 // Screen function prototypes
-void screen_1(ssd1306_t *oled);
-void screen_2(ssd1306_t *oled);
-void screen_IMU_update(ssd1306_t *oled);
-void screen_3(ssd1306_t *oled, const char *message);
-void screen_4(ssd1306_t *oled, const char *param_name, float value);
-void screen_initial_float_conversion(ssd1306_t *oled, const char *prompt);
-void screen_update_float_conversion(ssd1306_t *oled, const char *prompt, const char *input_buffer, char *display_message);
-void screen_confirmation(ssd1306_t *oled, const char *message, float result, char *display_message);
-void screen_params_summary(ssd1306_t *oled, float ki, float kp, float kd, float setpoint);
-void screen_buffer_error(ssd1306_t *oled);
-void screen_decimal_exists_error(ssd1306_t *oled);
-void screen_decimal_before_number_error(ssd1306_t *oled);
-void screen_number_too_long_error(ssd1306_t *oled);
-void screen_reset_input(ssd1306_t *oled, const char *prompt);
-void screen_invalid_char_error(ssd1306_t *oled, const char *prompt, const char *input_buffer, char *display_message);
+// void screen_1(ssd1306_t *oled);
+// void screen_2(ssd1306_t *oled);
+// void screen_IMU_update(ssd1306_t *oled);
+// void screen_3(ssd1306_t *oled, const char *message);
+// void screen_4(ssd1306_t *oled, const char *param_name, float value);
+// void screen_initial_float_conversion(ssd1306_t *oled, const char *prompt);
+// void screen_update_float_conversion(ssd1306_t *oled, const char *prompt, const char *input_buffer, char *display_message);
+// void screen_confirmation(ssd1306_t *oled, const char *message, float result, char *display_message);
+// void screen_params_summary(ssd1306_t *oled, float ki, float kp, float kd, float setpoint);
+// void screen_buffer_error(ssd1306_t *oled);
+// void screen_decimal_exists_error(ssd1306_t *oled);
+// void screen_decimal_before_number_error(ssd1306_t *oled);
+// void screen_number_too_long_error(ssd1306_t *oled);
+// void screen_reset_input(ssd1306_t *oled, const char *prompt);
+// void screen_invalid_char_error(ssd1306_t *oled, const char *prompt, const char *input_buffer, char *display_message);
 
 // Timer callback prototypes
 bool timer_callback_PID(repeating_timer_t *rt);
@@ -162,7 +162,6 @@ bool timer_callback_imu(repeating_timer_t *rt) {
 
 
 bool timer_callback_screen(repeating_timer_t *rt) {
-    printf("Updating screen with valor_prueba = %.2f\n", valor_prueba); // Debug
 
     flag_screen_value_update = true; // Set flag to indicate screen update needed
     return true; // Return true to keep the timer running
@@ -236,18 +235,19 @@ void StateMainMenu(void) {
     screen_1(&oled);
 
     if (get_key_flag()) {
-        while (!read_mat(&key));
-        printf("Key pressed: %c \n", key);
+        if (read_mat(&key)){
+            printf("Key pressed: %c \n", key);
 
-        if (key == '1') {
-            screen_2(&oled);
-            esc_write_speed(&my_esc, 30);
-            add_repeating_timer_ms(INTERVALO_MS_UPDATE_SCREEN, timer_callback_screen, NULL, &timer_update_screen);
-            add_repeating_timer_ms(INTERVALO_MS_PID, PID_callback, NULL, &timer_PID);
-            add_repeating_timer_ms(INTERVALO_MS_IMU, timer_callback_imu, NULL, &timer_imu);
-            CurrentState = StatePID;
-        } else if (key == '2') {
-            CurrentState = StateManual;
+            if (key == '1') {
+                screen_2(&oled);
+                esc_write_speed(&my_esc, 30);
+                add_repeating_timer_ms(INTERVALO_MS_UPDATE_SCREEN, timer_callback_screen, NULL, &timer_update_screen);
+                add_repeating_timer_ms(INTERVALO_MS_PID, PID_callback, NULL, &timer_PID);
+                add_repeating_timer_ms(INTERVALO_MS_IMU, timer_callback_imu, NULL, &timer_imu);
+                CurrentState = StatePID;
+            } else if (key == '2') {
+                CurrentState = StateManual;
+            }
         }
     }
 }
@@ -255,7 +255,7 @@ void StateMainMenu(void) {
 void StatePID(void) {
     if(flag_screen_value_update) {
         flag_screen_value_update = false; // Reset the flag after updating the screen
-        screen_IMU_update(&oled);
+        screen_IMU_update(&oled, &mpu6050_data, angle_roll_offset, angle_pitch_offset);
     }
     if(flag_read_imu) {
         flag_read_imu = false; // Reset the flag after reading IMU
@@ -267,33 +267,26 @@ void StatePID(void) {
         kalman_1d(&(mpu6050_data.KalmanAnglePitch), &(mpu6050_data.KalmanUncertaintyAnglePitch),
             mpu6050_data.RatePitch, mpu6050_data.AnglePitch,
             UPDATE_RATE_S);
-        valor_prueba += 0.1f; // Simulate some data capture
-        if(valor_prueba > 200.0f) {
-            valor_prueba = 0.0f; // Reset after reaching a threshold
-        }
+
     }
     if (get_key_flag()) {
-        while (!read_mat(&key));
-        if (key == '#') {
-            //esc_write_speed(&my_esc, 0); // Stop the ESC
-            cancel_repeating_timer(&timer_update_screen);
-            cancel_repeating_timer(&timer_PID);
-            cancel_repeating_timer(&timer_imu);
-            screen_1(&oled);
-            
-            CurrentState = StateMainMenu;
+        if (read_mat(&key)){
+            if (key == '#') {
+                esc_write_speed(&my_esc, 0); // Stop the ESC
+                cancel_repeating_timer(&timer_update_screen);
+                cancel_repeating_timer(&timer_PID);
+                cancel_repeating_timer(&timer_imu);
+                screen_1(&oled);
+                
+                CurrentState = StateMainMenu;
+            }
         }
     }
 }
 
 void wait_for_key_press() {
     key = 0;
-    // while (key == 0) {
-    //     if (get_key_flag()) {
-    //         while (!read_mat(&key));
-    //     }
-    //     sleep_ms(50);
-    // }
+
     while (!get_key_flag()){tight_loop_contents();}
     if(get_key_flag()) {
         while (!read_mat(&key));
@@ -321,12 +314,13 @@ void StateManual(void) {
     screen_4(&oled, "Speed", speed);
     wait_for_key_press();
 
-    screen_params_summary(&oled, ki, kp, kd, setpoint);
+    screen_params_summary(&oled, ki, kp, kd, setpoint, speed);
 
     while (!get_key_flag()){tight_loop_contents();}
     if (get_key_flag()) {
         while (!read_mat(&key));
         if (key == '*') {
+            
             screen_1(&oled);
             CurrentState = StateMainMenu;
         } else if (key == '#') {
@@ -375,181 +369,171 @@ void StateManual(void) {
 
 
 
-/**
- * TODO: This functions should be in the oled library. 
- */
+// /**
+//  * TODO: This functions should be in the oled library. 
+//  */
 
-void screen_1(ssd1306_t *oled)
-{
-    ssd1306_clear(oled);
-    ssd1306_draw_string(oled, 0, 0, 1, "TVC Control");
-    ssd1306_draw_string(oled, 0, 10, 1, "Select option:");
-    ssd1306_draw_string(oled, 0, 20, 1, "1. Automatic");
-    ssd1306_draw_string(oled, 0, 30, 1, "2. Manual");
-    ssd1306_show(oled);
-}
+// void screen_1(ssd1306_t *oled)
+// {
+//     ssd1306_clear(oled);
+//     ssd1306_draw_string(oled, 0, 0, 1, "TVC Control");
+//     ssd1306_draw_string(oled, 0, 10, 1, "Select option:");
+//     ssd1306_draw_string(oled, 0, 20, 1, "1. Automatic");
+//     ssd1306_draw_string(oled, 0, 30, 1, "2. Manual");
+//     ssd1306_show(oled);
+// }
 
-void screen_2(ssd1306_t *oled){
-    ssd1306_clear(oled);
-    ssd1306_draw_string(oled, 0, 0, 1, "Automatic Mode");
-    ssd1306_draw_string(oled, 0, 20, 1, "Ac_x = 0.00");
-    ssd1306_draw_string(oled, 0, 30, 1, "Ac_y = 0.00");
-    ssd1306_draw_string(oled, 0, 45, 1, "Ag_x = 0.00");
-    ssd1306_draw_string(oled, 0, 55, 1, "Ag_y = 0.00");
-    ssd1306_show(oled);
-}
+// void screen_2(ssd1306_t *oled){
+//     ssd1306_clear(oled);
+//     ssd1306_draw_string(oled, 0, 0, 1, "Automatic Mode");
+//     ssd1306_draw_string(oled, 0, 20, 1, "Ac_x = 0.00");
+//     ssd1306_draw_string(oled, 0, 30, 1, "Ac_y = 0.00");
+//     ssd1306_draw_string(oled, 0, 45, 1, "Ag_x = 0.00");
+//     ssd1306_draw_string(oled, 0, 55, 1, "Ag_y = 0.00");
+//     ssd1306_show(oled);
+// }
 
-void screen_IMU_update(ssd1306_t *oled){
-    // ssd1306_clear(oled);
-    // ssd1306_draw_string(oled, 0, 0, 1, "Automatic Mode");
-    // char buffer[32];
-    // snprintf(buffer, sizeof(buffer), "Ac_x = %.2f", valor_prueba);
-    // ssd1306_draw_string(oled, 0, 10, 1, buffer);
-    // snprintf(buffer, sizeof(buffer), "Ac_y = %.2f", valor_prueba*2);
-    // ssd1306_draw_string(oled, 0, 20, 1, buffer);
-    // snprintf(buffer, sizeof(buffer), "Gy_x = %.2f", valor_prueba*3);
-    // ssd1306_draw_string(oled, 0, 40, 1, buffer);
-    // snprintf(buffer, sizeof(buffer), "Gy_y = %.2f", valor_prueba*4);
-    // ssd1306_draw_string(oled, 0, 50, 1, buffer);
-    // ssd1306_show(oled);
+// void screen_IMU_update(ssd1306_t *oled){
 
-    char buffer[32];
-    ssd1306_clear_square(oled, 35, 10, 64, 54); // Clear the area for new data
-    snprintf(buffer, sizeof(buffer), " %.2f", mpu6050_data.AccX);
-    ssd1306_draw_string(oled, 35, 20, 1, buffer);
-    snprintf(buffer, sizeof(buffer), " %.2f", mpu6050_data.AccY);
-    ssd1306_draw_string(oled, 35, 30, 1, buffer);
+//     char buffer[32];
+//     ssd1306_clear_square(oled, 35, 10, 64, 54); // Clear the area for new data
+//     snprintf(buffer, sizeof(buffer), " %.2f", mpu6050_data.AccX);
+//     ssd1306_draw_string(oled, 35, 20, 1, buffer);
+//     snprintf(buffer, sizeof(buffer), " %.2f", mpu6050_data.AccY);
+//     ssd1306_draw_string(oled, 35, 30, 1, buffer);
 
-    //Angulos
-    snprintf(buffer, sizeof(buffer), " %.2f", mpu6050_data.KalmanAngleRoll + angle_roll_offset);
-    ssd1306_draw_string(oled, 35, 45, 1, buffer);
-    snprintf(buffer, sizeof(buffer), " %.2f", mpu6050_data.KalmanAnglePitch + angle_pitch_offset);
-    ssd1306_draw_string(oled, 35, 55, 1, buffer);
-    ssd1306_show(oled);
-}
+//     //Angulos
+//     snprintf(buffer, sizeof(buffer), " %.2f", mpu6050_data.KalmanAngleRoll + angle_roll_offset);
+//     ssd1306_draw_string(oled, 35, 45, 1, buffer);
+//     snprintf(buffer, sizeof(buffer), " %.2f", mpu6050_data.KalmanAnglePitch + angle_pitch_offset);
+//     ssd1306_draw_string(oled, 35, 55, 1, buffer);
+//     ssd1306_show(oled);
+// }
 
-void screen_3(ssd1306_t *oled, const char *message){
-    ssd1306_clear(oled);
-    ssd1306_draw_string(oled, 0, 0, 1, "Manual Mode");
-    ssd1306_draw_string(oled, 0, 10, 1, message);
-    ssd1306_show(oled);
-}
+// void screen_3(ssd1306_t *oled, const char *message){
+//     ssd1306_clear(oled);
+//     ssd1306_draw_string(oled, 0, 0, 1, "Manual Mode");
+//     ssd1306_draw_string(oled, 0, 10, 1, message);
+//     ssd1306_show(oled);
+// }
 
-void screen_4(ssd1306_t *oled, const char *param_name, float value){
-    ssd1306_clear(oled);
-    ssd1306_draw_string(oled, 0, 0, 1, "Parameter Set");
-    char param_line[32];
-    snprintf(param_line, sizeof(param_line), "%s = %.3f", param_name, value);
-    ssd1306_draw_string(oled, 0, 20, 1, param_line);
-    ssd1306_draw_string(oled, 0, 40, 1, "Press any key");
-    ssd1306_draw_string(oled, 0, 50, 1, "to continue...");
-    ssd1306_show(oled);
-}
+// void screen_4(ssd1306_t *oled, const char *param_name, float value){
+//     ssd1306_clear(oled);
+//     ssd1306_draw_string(oled, 0, 0, 1, "Parameter Set");
+//     char param_line[32];
+//     snprintf(param_line, sizeof(param_line), "%s = %.3f", param_name, value);
+//     ssd1306_draw_string(oled, 0, 20, 1, param_line);
+//     ssd1306_draw_string(oled, 0, 40, 1, "Press any key");
+//     ssd1306_draw_string(oled, 0, 50, 1, "to continue...");
+//     ssd1306_show(oled);
+// }
 
 
-void screen_initial_float_conversion(ssd1306_t *oled, const char *prompt) {
-    ssd1306_clear(oled);
-    ssd1306_draw_string(oled, 0, 0, 1, prompt);
-    ssd1306_draw_string(oled, 0, 20, 1, "Enter number:");
-    ssd1306_draw_string(oled, 0, 30, 1, "* = decimal point");
-    ssd1306_draw_string(oled, 0, 40, 1, "# = confirm");
-    ssd1306_draw_string(oled, 0, 50, 1, "Value: ");
-    ssd1306_show(oled);
-}
+// void screen_initial_float_conversion(ssd1306_t *oled, const char *prompt) {
+//     ssd1306_clear(oled);
+//     ssd1306_draw_string(oled, 0, 0, 1, prompt);
+//     ssd1306_draw_string(oled, 0, 20, 1, "Enter number:");
+//     ssd1306_draw_string(oled, 0, 30, 1, "* = decimal point");
+//     ssd1306_draw_string(oled, 0, 40, 1, "# = confirm");
+//     ssd1306_draw_string(oled, 0, 50, 1, "Value: ");
+//     ssd1306_show(oled);
+// }
 
-void screen_update_float_conversion(ssd1306_t *oled, const char *prompt, const char *input_buffer, char *display_message) {
-    ssd1306_clear(oled);
-    ssd1306_draw_string(oled, 0, 0, 1, prompt);
-    ssd1306_draw_string(oled, 0, 20, 1, "Enter number:");
-    ssd1306_draw_string(oled, 0, 30, 1, "* = decimal point");
-    ssd1306_draw_string(oled, 0, 40, 1, "# = confirm");
-    snprintf(display_message, 64, "Value: %s", input_buffer);
-    ssd1306_draw_string(oled, 0, 50, 1, display_message);
-    ssd1306_show(oled);
-}
+// void screen_update_float_conversion(ssd1306_t *oled, const char *prompt, const char *input_buffer, char *display_message) {
+//     ssd1306_clear(oled);
+//     ssd1306_draw_string(oled, 0, 0, 1, prompt);
+//     ssd1306_draw_string(oled, 0, 20, 1, "Enter number:");
+//     ssd1306_draw_string(oled, 0, 30, 1, "* = decimal point");
+//     ssd1306_draw_string(oled, 0, 40, 1, "# = confirm");
+//     snprintf(display_message, 64, "Value: %s", input_buffer);
+//     ssd1306_draw_string(oled, 0, 50, 1, display_message);
+//     ssd1306_show(oled);
+// }
 
-void screen_confirmation(ssd1306_t *oled, const char *message, float result, char *display_message) {
-    ssd1306_clear(oled);
-    ssd1306_draw_string(oled, 0, 0, 1, "Confirmed:");
-    snprintf(display_message, 64, "%.3f", result);
-    ssd1306_draw_string(oled, 0, 20, 1, display_message);
-    ssd1306_show(oled);
-}
+// void screen_confirmation(ssd1306_t *oled, const char *message, float result, char *display_message) {
+//     ssd1306_clear(oled);
+//     ssd1306_draw_string(oled, 0, 0, 1, "Confirmed:");
+//     snprintf(display_message, 64, "%.3f", result);
+//     ssd1306_draw_string(oled, 0, 20, 1, display_message);
+//     ssd1306_show(oled);
+// }
 
-void screen_params_summary(ssd1306_t *oled, float ki, float kp, float kd, float setpoint) {
-    ssd1306_clear(oled);
-    ssd1306_draw_string(oled, 0, 0, 1, "Parameters Set:");
-    char summary[64];
-    snprintf(summary, sizeof(summary), "Ki=%.2f Kp=%.2f", ki, kp);
-    ssd1306_draw_string(oled, 0, 15, 1, summary);
-    snprintf(summary, sizeof(summary), "Kd=%.2f", kd);
-    ssd1306_draw_string(oled, 0, 25, 1, summary);
-    snprintf(summary, sizeof(summary), "SP=%.2f", setpoint);
-    ssd1306_draw_string(oled, 0, 35, 1, summary);
-    ssd1306_draw_string(oled, 0, 50, 1, "# = Main Menu");
-    ssd1306_show(oled);
-}
+// void screen_params_summary(ssd1306_t *oled, float ki, float kp, float kd, float setpoint) {
+//     ssd1306_clear(oled);
+//     ssd1306_draw_string(oled, 0, 0, 1, "Parameters Set:");
+//     char summary[64];
+//     snprintf(summary, sizeof(summary), "Ki=%.2f Kp=%.2f", ki, kp);
+//     ssd1306_draw_string(oled, 0, 15, 1, summary);
+//     snprintf(summary, sizeof(summary), "Kd=%.2f SP=%.2f", kd, setpoint);
+//     ssd1306_draw_string(oled, 0, 25, 1, summary);
 
-void screen_buffer_error(ssd1306_t *oled) {
-    ssd1306_clear(oled);
-    ssd1306_draw_string(oled, 0, 0, 1, "ERROR:");
-    ssd1306_draw_string(oled, 0, 10, 1, "Number too long");
-    ssd1306_draw_string(oled, 0, 20, 1, "Press # to reset");
-    ssd1306_show(oled);
-}
+//     snprintf(summary, sizeof(summary), "ESC Speed=%d", speed);
+//     ssd1306_draw_string(oled, 0, 35, 1, summary);
+//     ssd1306_draw_string(oled, 0, 45, 1, "Press # to confirm");
+//     ssd1306_draw_string(oled, 0, 55, 1, "Press * to reset");
+//     ssd1306_show(oled);
+// }
 
-void screen_decimal_exists_error(ssd1306_t *oled) {
-    ssd1306_clear(oled);
-    ssd1306_draw_string(oled, 0, 0, 1, "ERROR:");
-    ssd1306_draw_string(oled, 0, 10, 1, "Decimal already");
-    ssd1306_draw_string(oled, 0, 20, 1, "exists");
-    ssd1306_draw_string(oled, 0, 40, 1, "Continue typing...");
-    ssd1306_show(oled);
-}
+// void screen_buffer_error(ssd1306_t *oled) {
+//     ssd1306_clear(oled);
+//     ssd1306_draw_string(oled, 0, 0, 1, "ERROR:");
+//     ssd1306_draw_string(oled, 0, 10, 1, "Number too long");
+//     ssd1306_draw_string(oled, 0, 20, 1, "Press # to reset");
+//     ssd1306_show(oled);
+// }
 
-void screen_decimal_before_number_error(ssd1306_t *oled) {
-    ssd1306_clear(oled);
-    ssd1306_draw_string(oled, 0, 0, 1, "ERROR:");
-    ssd1306_draw_string(oled, 0, 10, 1, "Enter number");
-    ssd1306_draw_string(oled, 0, 20, 1, "before decimal");
-    ssd1306_draw_string(oled, 0, 40, 1, "Continue typing...");
-    ssd1306_show(oled);
-}
+// void screen_decimal_exists_error(ssd1306_t *oled) {
+//     ssd1306_clear(oled);
+//     ssd1306_draw_string(oled, 0, 0, 1, "ERROR:");
+//     ssd1306_draw_string(oled, 0, 10, 1, "Decimal already");
+//     ssd1306_draw_string(oled, 0, 20, 1, "exists");
+//     ssd1306_draw_string(oled, 0, 40, 1, "Continue typing...");
+//     ssd1306_show(oled);
+// }
 
-void screen_number_too_long_error(ssd1306_t *oled) {
-    ssd1306_clear(oled);
-    ssd1306_draw_string(oled, 0, 0, 1, "ERROR:");
-    ssd1306_draw_string(oled, 0, 10, 1, "Number too long");
-    ssd1306_draw_string(oled, 0, 20, 1, "Press # to reset");
-    ssd1306_show(oled);
-}
+// void screen_decimal_before_number_error(ssd1306_t *oled) {
+//     ssd1306_clear(oled);
+//     ssd1306_draw_string(oled, 0, 0, 1, "ERROR:");
+//     ssd1306_draw_string(oled, 0, 10, 1, "Enter number");
+//     ssd1306_draw_string(oled, 0, 20, 1, "before decimal");
+//     ssd1306_draw_string(oled, 0, 40, 1, "Continue typing...");
+//     ssd1306_show(oled);
+// }
 
-void screen_reset_input(ssd1306_t *oled, const char *prompt) {
-    ssd1306_clear(oled);
-    ssd1306_draw_string(oled, 0, 0, 1, "Input cleared");
-    ssd1306_draw_string(oled, 0, 20, 1, "Start over...");
-    ssd1306_show(oled);
+// void screen_number_too_long_error(ssd1306_t *oled) {
+//     ssd1306_clear(oled);
+//     ssd1306_draw_string(oled, 0, 0, 1, "ERROR:");
+//     ssd1306_draw_string(oled, 0, 10, 1, "Number too long");
+//     ssd1306_draw_string(oled, 0, 20, 1, "Press # to reset");
+//     ssd1306_show(oled);
+// }
 
-    sleep_ms(1000);  // Show reset message for 1 second
+// void screen_reset_input(ssd1306_t *oled, const char *prompt) {
+//     ssd1306_clear(oled);
+//     ssd1306_draw_string(oled, 0, 0, 1, "Input cleared");
+//     ssd1306_draw_string(oled, 0, 20, 1, "Start over...");
+//     ssd1306_show(oled);
+
+//     sleep_ms(1000);  // Show reset message for 1 second
     
-    // Redraw initial screen
-    screen_initial_float_conversion(oled, prompt);
-}
+//     // Redraw initial screen
+//     screen_initial_float_conversion(oled, prompt);
+// }
 
-void screen_invalid_char_error(ssd1306_t *oled, const char *prompt, const char *input_buffer, char *display_message) {
-    ssd1306_clear(oled);
-    ssd1306_draw_string(oled, 0, 0, 1, "ERROR:");
-    ssd1306_draw_string(oled, 0, 10, 1, "Invalid character");
-    ssd1306_draw_string(oled, 0, 20, 1, "Use numbers only");
-    ssd1306_draw_string(oled, 0, 40, 1, "Continue typing...");
-    ssd1306_show(oled);
+// void screen_invalid_char_error(ssd1306_t *oled, const char *prompt, const char *input_buffer, char *display_message) {
+//     ssd1306_clear(oled);
+//     ssd1306_draw_string(oled, 0, 0, 1, "ERROR:");
+//     ssd1306_draw_string(oled, 0, 10, 1, "Invalid character");
+//     ssd1306_draw_string(oled, 0, 20, 1, "Use numbers only");
+//     ssd1306_draw_string(oled, 0, 40, 1, "Continue typing...");
+//     ssd1306_show(oled);
 
-    sleep_ms(2000);  // Show error for 2 seconds
+//     sleep_ms(2000);  // Show error for 2 seconds
 
-    // Redraw current input
-    screen_update_float_conversion(oled, prompt, input_buffer, display_message);
+//     // Redraw current input
+//     screen_update_float_conversion(oled, prompt, input_buffer, display_message);
 
-}
+// }
 
 /**
  * TODO: Change sleeps by timers or other technique.
@@ -568,7 +552,7 @@ float keyboard_to_float(ssd1306_t *oled, const char *prompt) {
     
     while (true) {
         if (get_key_flag()) {
-            while (!read_mat(&key));
+            if (read_mat(&key)){
             
             // Check if it's a number (0-9)
             if (key >= '0' && key <= '9') {
@@ -650,7 +634,9 @@ float keyboard_to_float(ssd1306_t *oled, const char *prompt) {
                 sleep_ms(200);  // Show error for 2 seconds
             }
         }
-        
-        sleep_ms(50);  
+    }else {
+            tight_loop_contents(); // Wait for key press
+        }
+        //sleep_ms(50);  
     }
 }
