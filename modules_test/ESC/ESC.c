@@ -7,7 +7,7 @@ int main() {
     stdio_init_all();
 
     esc_t my_esc;
-    esc_init(&my_esc, 15, 50, 64.0f); // GPIO 15, 50 Hz, clkdiv 64
+    esc_init(&my_esc, 10, 50, 64.0f); // GPIO 15, 50 Hz, clkdiv 64
     esc_write_speed(&my_esc, 0);
     sleep_ms(2000);  // Tiempo para armar el ESC
 
