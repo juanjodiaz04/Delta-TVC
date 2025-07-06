@@ -27,9 +27,13 @@ typedef struct {
     float KalmanAngleRoll; ///< Kalman filtered Roll angle
     float KalmanAnglePitch; ///< Kalman filtered Pitch angle
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
     
 >>>>>>> PID
+=======
+    
+>>>>>>> ESC
     float KalmanAngleYaw; ///< Kalman filtered Yaw angle
     float KalmanUncertaintyAngleRoll; ///< Kalman uncertainty for Roll angle
     float KalmanUncertaintyAnglePitch; ///< Kalman uncertainty for Pitch angle
