@@ -1,3 +1,11 @@
+/**
+ * @file adc.h
+ * @brief Interfaz para manejar el ADC del RP2040.
+ * 
+ * Este archivo define funciones y estructuras para inicializar y leer valores del ADC.
+ * Se incluye una advertencia importante sobre el uso del sensor ACS712 con el ADC.
+ */
+
 #ifndef ADC_H
 #define ADC_H
 

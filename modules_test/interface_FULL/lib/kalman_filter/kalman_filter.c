@@ -1,5 +1,9 @@
-#include <stdint.h>
+/**
+ * @file kalman_filter.c
+ * @brief Interfaz para el filtro de Kalman 1D.
+ */
 
+#include <stdint.h>
 #include "kalman_filter.h"
 
 void kalman_1d(float *KalmanState, float *KalmanUncertainty, float KalmanInput, float KalmanMeasurement, float dt) {

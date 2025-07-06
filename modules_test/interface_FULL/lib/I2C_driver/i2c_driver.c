@@ -1,3 +1,8 @@
+/**
+ * @file i2c_driver.c
+ * @brief Interfaz para manejar la comunicación I2C en el RP2040.
+ */
+
 #include "i2c_driver.h"
 
 void i2c_setup(i2c_inst_t *i2c, uint gpio_sda, uint gpio_scl) {

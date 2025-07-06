@@ -1,3 +1,8 @@
+/**
+ * @file font.h
+ * @brief Interfaz para manejar una fuente de caracteres en un OLED.
+ */
+
 #ifndef _inc_font
 #define _inc_font
 

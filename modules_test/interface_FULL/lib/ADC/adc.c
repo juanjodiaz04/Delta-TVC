@@ -1,3 +1,8 @@
+// ** @file adc.c
+//  * @brief Interfaz para manejar el ADC del RP2040.
+//  *  * Este archivo define funciones y estructuras para inicializar y leer valores del ADC.
+//  * Se incluye una advertencia importante sobre el uso del sensor ACS712 con el ADC.
+//  */
 #include "adc.h"
 
 void adc_util_init(adc_t* adc, uint8_t gpio_pin, uint8_t adc_input, float vref)

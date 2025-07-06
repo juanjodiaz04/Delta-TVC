@@ -1,3 +1,9 @@
+/**
+ * @file i2c_driver.h
+ * @brief Interfaz para manejar la comunicación I2C en el RP2040.
+ * * Este archivo define funciones para leer y escribir datos a través de I2C,
+ */
+
 #ifndef I2C_DRIVER_H
 #define I2C_DRIVER_H
 

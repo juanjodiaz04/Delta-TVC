@@ -1,4 +1,6 @@
 /**
+ * @file mat.c
+ * @brief Interfaz para manejar un teclado matricial de 4x4.
  */
 
 #include <stdio.h>

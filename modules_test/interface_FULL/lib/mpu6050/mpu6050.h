@@ -1,3 +1,8 @@
+/**
+ * @file mpu6050.h
+ * @brief Interfaz para manejar el sensor MPU6050 utilizando I2C en el RP2040.
+ */
+
 #ifndef __MPU6050_H__
 #define __MPU6050_H__
 

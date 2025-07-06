@@ -1,10 +1,15 @@
+/**
+ * @file ESC_lib.c
+ * @brief Implementación de funciones para controlar ESCs (Electronic Speed Controllers).
+ *
+ * Este archivo contiene las funciones necesarias para inicializar y controlar un ESC
+ * utilizando PWM en el RP2040.
+ */
+
 #include "hardware/pwm.h"
 #include "hardware/gpio.h"
 #include "ESC_lib.h"
 
-/**
- * @brief Inicializa un ESC con los parámetros proporcionados.
- */
 void esc_init(esc_t *esc, uint8_t gpio_pin, uint16_t frequency_hz, float clkdiv)
 {
     // Guardar parámetros en la estructura

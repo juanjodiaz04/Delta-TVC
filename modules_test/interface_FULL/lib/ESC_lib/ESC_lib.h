@@ -1,3 +1,11 @@
+/**
+ * @file ESC_lib.h
+ * @brief Interfaz para controlar ESCs (Electronic Speed Controllers) usando PWM en el RP2040.
+ *
+ * Este archivo define la estructura y funciones necesarias para inicializar y controlar un ESC.
+ * Se utiliza PWM para enviar señales de control al ESC, permitiendo ajustar la velocidad del motor.
+ */
+
 #ifndef ESC_LIB_H
 #define ESC_LIB_H
 
@@ -6,9 +14,6 @@
 #include "pico/stdlib.h"
 #include "hardware/pwm.h"
 
-/**
- * @brief Estructura para el control básico de un ESC de motor brushless usando PWM.
- */
 typedef struct {
     struct {
         uint8_t gpio_pin     : 5;   /**< Pin GPIO utilizado para la señal PWM. */

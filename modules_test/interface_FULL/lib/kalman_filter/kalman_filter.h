@@ -1,3 +1,7 @@
+/**
+ * @file kalman_filter.h
+ * @brief Interfaz para el filtro de Kalman 1D.
+ */
 #ifndef KALMAN_FILTER_H
 #define KALMAN_FILTER_H
 

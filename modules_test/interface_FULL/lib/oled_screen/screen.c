@@ -1,3 +1,7 @@
+/**
+ * @file screen.c
+ * @brief Interfaz para manejar pantallas OLED SSD1306 en el RP2040.
+ */
 #include "screen.h"
 #include "stdio.h"
 
