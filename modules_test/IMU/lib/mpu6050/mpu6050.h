@@ -21,6 +21,16 @@ typedef struct {
     float gyro_offset_x; ///< Gyroscope X-axis offset
     float gyro_offset_y; ///< Gyroscope Y-axis offset
     float gyro_offset_z; ///< Gyroscope Z-axis offset
+    float AngleRoll; ///< Calculated Roll angle in degrees
+    float AnglePitch; ///< Calculated Pitch angle in degrees
+    float AngleYaw; ///< Calculated Yaw angle in degrees
+    float KalmanAngleRoll; ///< Kalman filtered Roll angle
+    float KalmanAnglePitch; ///< Kalman filtered Pitch angle
+    
+    float KalmanAngleYaw; ///< Kalman filtered Yaw angle
+    float KalmanUncertaintyAngleRoll; ///< Kalman uncertainty for Roll angle
+    float KalmanUncertaintyAnglePitch; ///< Kalman uncertainty for Pitch angle
+    float KalmanUncertaintyAngleYaw; ///< Kalman uncertainty for Yaw angle
 } mpu6050_data_t;
 
 enum {
@@ -171,6 +181,19 @@ void getGyroRange(mpu6050_gyro_range_t *range); ///< Get gyroscope range
  * physical units (g's for accelerometer and degrees per second for gyroscope).
  */
 void mpu6050_read(mpu6050_data_t *data);
+
+/**
+ * @brief Calibrate the gyroscope offsets.
+ * This function calibrates the gyroscope by averaging multiple samples to determine
+ * the offsets for each axis. The offsets are stored in the provided `mpu6050_data_t` structure.
+ * @param data Pointer to the `mpu6050_data_t` structure where the offsets will be stored.
+ * @param samples The number of samples to average for calibration.
+ * 
+ */
+void mpu6050_calibrate_gyro(mpu6050_data_t *data, int samples);
+
+void mpu6050_calibrate_accel(mpu6050_data_t *data, int samples);
+
 
 //Suggested functions from the MPU6050_6Axis_MotionApps20.cpp
 

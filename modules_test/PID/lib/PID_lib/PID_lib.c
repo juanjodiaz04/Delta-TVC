@@ -6,13 +6,13 @@
 #include "lib/PID_lib/PID_lib.h"
 #include "pico/time.h"
 
-void pid_create(pid_controller_t *pid, float *in, float *out, float *set, float kp, float ki, float kd, float omin, float omax)
+void pid_create(pid_controller_t *pid, float *in, float *out, float set, float kp, float ki, float kd, float omin, float omax)
 {
     pid->input = in;
     pid->output = out;
     pid->setpoint = set;
 
-    pid->automode = false;
+    pid->automode = true;
     pid->sampletime = 100; // Default sample time (ms)
     pid->omin = omin;
     pid->omax = omax;
@@ -30,8 +30,8 @@ void pid_compute(pid_controller_t *pid)
     if (!pid->automode)
         return;
 
-    float input = *(pid->input);                                // Read the current input value    
-    float error = *(pid->setpoint) - input;                     // Calculate the error (setpoint - input)
+    float input = *(pid->input) + pid->angle_offset;                                // Read the current input value
+    float error = pid->setpoint - input;                         // Calculate the error (setpoint - input)
 
     pid->iterm += pid->Ki * error;                              // Update the integral term
     if (pid->iterm > pid->omax) pid->iterm = pid->omax;
@@ -117,4 +117,9 @@ void pid_direction(pid_controller_t *pid, pid_control_direction_t dir)
         pid->Kd = -pid->Kd;
     }
     pid->direction = dir;
+}
+
+void pid_set_angle_offset(pid_controller_t *pid, float angle_offset)
+{
+    pid->angle_offset = angle_offset;
 }

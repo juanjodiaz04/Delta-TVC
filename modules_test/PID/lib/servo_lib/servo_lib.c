@@ -46,7 +46,7 @@ static uint16_t micros_to_level(const servo_t *servo, uint16_t micros)
     return (uint16_t)((micros * servo->top) / SERVO_PERIOD_US);
 }
 
-void servo_init(servo_t *servo, uint8_t pin)
+void servo_init(servo_t *servo, uint8_t pin, uint16_t initial_angle)
 {
     servo->pin = pin;
     servo->slice_num = pwm_gpio_to_slice_num(pin);
@@ -61,9 +61,11 @@ void servo_init(servo_t *servo, uint8_t pin)
     pwm_config_set_wrap(&config, top);
 
     pwm_init(servo->slice_num, &config, false);
+    pwm_set_gpio_level(pin, angle_to_level(servo, initial_angle));
+    servo->angle = initial_angle;
 }
 
-void servo_start(const servo_t *servo, uint8_t angle)
+void servo_start(servo_t *servo, uint8_t angle)
 {
     if (angle < SERVO_MIN_ANGLE || angle > SERVO_MAX_ANGLE)
         return;
@@ -75,14 +77,14 @@ void servo_start(const servo_t *servo, uint8_t angle)
     pwm_set_enabled(servo->slice_num, true);
 }
 
-void servo_set_angle(const servo_t *servo, uint8_t angle)
+void servo_set_angle(servo_t *servo, uint8_t angle)
 {
     if (angle < SERVO_MIN_ANGLE || angle > SERVO_MAX_ANGLE)
         return;
 
     uint16_t level = angle_to_level(servo, angle);
     uint8_t channel = pwm_gpio_to_channel(servo->pin);
-
+    servo->angle = angle;
     pwm_set_chan_level(servo->slice_num, channel, level);
 }
 

@@ -58,6 +58,8 @@ typedef struct {
 
     bool automode;          /**< PID mode: true = automatic, false = manual */
     pid_control_direction_t direction; /**< Control direction */
+
+    float angle_offset; /**< Offset for angle control */
 } pid_controller_t;
 
 
@@ -140,4 +142,13 @@ void pid_manual(pid_controller_t *pid);
  */
 void pid_direction(pid_controller_t *pid, pid_control_direction_t dir);
 
+/**
+ * @brief Sets an angle offset for the PID controller.
+ * 
+ * This is useful for applications where the input needs to be adjusted by a fixed angle offset.
+ * 
+ * @param pid Pointer to the PID controller.
+ * @param angle_offset The angle offset to apply to the input.
+ */
+void pid_set_angle_offset(pid_controller_t *pid, float angle_offset);
 #endif // PID_LIB_H

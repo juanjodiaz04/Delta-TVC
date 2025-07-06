@@ -42,7 +42,7 @@ void servo_init(servo_t *servo, uint8_t pin, uint16_t initial_angle);
  * @param servo Pointer to a previously initialized servo_t struct.
  * @param angle Angle in degrees (0 to 180).
  */
-void servo_start(const servo_t *servo, uint8_t angle);
+void servo_start(servo_t *servo, uint8_t angle);
 
 /**
  * @brief Updates the PWM signal to move the servo to a new angle.
@@ -50,7 +50,7 @@ void servo_start(const servo_t *servo, uint8_t angle);
  * @param servo Pointer to a servo_t struct.
  * @param angle Angle in degrees (0 to 180).
  */
-void servo_set_angle(const servo_t *servo, uint8_t angle);
+void servo_set_angle(servo_t *servo, uint8_t angle);
 
 /**
  * @brief Sets a raw pulse width in microseconds for the servo.

@@ -30,7 +30,7 @@ void pid_compute(pid_controller_t *pid)
     if (!pid->automode)
         return;
 
-    float input = *(pid->input);                                // Read the current input value
+    float input = *(pid->input) + pid->angle_offset;                                // Read the current input value
     float error = pid->setpoint - input;                         // Calculate the error (setpoint - input)
 
     pid->iterm += pid->Ki * error;                              // Update the integral term
@@ -117,4 +117,9 @@ void pid_direction(pid_controller_t *pid, pid_control_direction_t dir)
         pid->Kd = -pid->Kd;
     }
     pid->direction = dir;
+}
+
+void pid_set_angle_offset(pid_controller_t *pid, float angle_offset)
+{
+    pid->angle_offset = angle_offset;
 }
