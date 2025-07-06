@@ -1,4 +1,5 @@
 #include "screen.h"
+#include "stdio.h"
 
 
 /**
@@ -150,8 +151,6 @@ void screen_reset_input(ssd1306_t *oled, const char *prompt) {
     ssd1306_draw_string(oled, 0, 0, 1, "Input cleared");
     ssd1306_draw_string(oled, 0, 20, 1, "Start over...");
     ssd1306_show(oled);
-
-
 }
 
 void screen_invalid_char_error(ssd1306_t *oled, const char *prompt, const char *input_buffer, char *display_message) {

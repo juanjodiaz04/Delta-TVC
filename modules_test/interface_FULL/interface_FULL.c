@@ -1,3 +1,23 @@
+/**
+ * @file interface_FULL.c
+ * @brief Main application file for the Delta TVC control system.
+ * 
+ * This file implements the main control loop for the Delta TVC system,
+ * including state management, PID control, IMU data handling, and user interface
+ * on an OLED display.
+ * 
+ * It integrates various modules such as MPU6050 for IMU data, PID control for servo angles,
+ * ESC control for motor speed, and an OLED display for user interaction.
+ * 
+ * It uses a state machine to manage different modes of operation:
+ * 1. Main Menu
+ * 2. PID Control Mode
+ * 3. Manual Parameter Adjustment Mode
+ * 
+ * @author Juan José Diaz, Juan Esteban Garcia, Santiago Vargas
+ * 
+ */
+
 #include <stdio.h>
 #include "pico/stdlib.h"
 #include "hardware/i2c.h"
