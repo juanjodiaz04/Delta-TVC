@@ -151,4 +151,8 @@ void pid_direction(pid_controller_t *pid, pid_control_direction_t dir);
  * @param angle_offset The angle offset to apply to the input.
  */
 void pid_set_angle_offset(pid_controller_t *pid, float angle_offset);
+<<<<<<< HEAD:modules_test/keyboard_screen_imu_pid/lib/PID_lib/PID_lib.h
 #endif // PID_LIB_H
+=======
+#endif // PID_LIB_H
+>>>>>>> PID:modules_test/IMU_PID/lib/PID_lib/PID_lib.h

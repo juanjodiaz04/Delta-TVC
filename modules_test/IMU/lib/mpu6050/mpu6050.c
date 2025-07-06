@@ -202,4 +202,8 @@ void mpu6050_calibrate_acc(mpu6050_data_t *data, int samples) {
      * TODO: Implement accelerometer calibration.
      * This function should read the accelerometer data multiple times
      */
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> PID
