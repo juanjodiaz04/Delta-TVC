@@ -65,7 +65,6 @@ static repeating_timer_t timer_PID;
 ///Timer para leer IMU
 static repeating_timer_t timer_imu;
 
-ssd1306_t oled;
 
 pid_controller_t pid_controller_roll;
 pid_controller_t pid_controller_pitch;
@@ -97,23 +96,6 @@ void StateMainMenu(void);
 void StatePID(void);
 void StateManual(void);
 void wait_for_key_press(void);
-
-// Screen function prototypes
-// void screen_1(ssd1306_t *oled);
-// void screen_2(ssd1306_t *oled);
-// void screen_IMU_update(ssd1306_t *oled);
-// void screen_3(ssd1306_t *oled, const char *message);
-// void screen_4(ssd1306_t *oled, const char *param_name, float value);
-// void screen_initial_float_conversion(ssd1306_t *oled, const char *prompt);
-// void screen_update_float_conversion(ssd1306_t *oled, const char *prompt, const char *input_buffer, char *display_message);
-// void screen_confirmation(ssd1306_t *oled, const char *message, float result, char *display_message);
-// void screen_params_summary(ssd1306_t *oled, float ki, float kp, float kd, float setpoint);
-// void screen_buffer_error(ssd1306_t *oled);
-// void screen_decimal_exists_error(ssd1306_t *oled);
-// void screen_decimal_before_number_error(ssd1306_t *oled);
-// void screen_number_too_long_error(ssd1306_t *oled);
-// void screen_reset_input(ssd1306_t *oled, const char *prompt);
-// void screen_invalid_char_error(ssd1306_t *oled, const char *prompt, const char *input_buffer, char *display_message);
 
 // Timer callback prototypes
 bool timer_callback_PID(repeating_timer_t *rt);
@@ -255,7 +237,7 @@ void StateMainMenu(void) {
 void StatePID(void) {
     if(flag_screen_value_update) {
         flag_screen_value_update = false; // Reset the flag after updating the screen
-        screen_IMU_update(&oled, &mpu6050_data, angle_roll_offset, angle_pitch_offset);
+        screen_IMU_update(&oled);
     }
     if(flag_read_imu) {
         flag_read_imu = false; // Reset the flag after reading IMU

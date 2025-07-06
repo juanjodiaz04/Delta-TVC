@@ -22,13 +22,14 @@ void screen_2(ssd1306_t *oled){
     ssd1306_draw_string(oled, 0, 30, 1, "Ac_y = 0.00");
     ssd1306_draw_string(oled, 0, 45, 1, "Ag_x = 0.00");
     ssd1306_draw_string(oled, 0, 55, 1, "Ag_y = 0.00");
+    ssd1306_draw_string(oled, 73, 20, 1, "I=0.00 A");
     ssd1306_show(oled);
 }
 
-void screen_IMU_update(ssd1306_t *oled, mpu6050_data_t *mpu6050_data, float angle_roll_offset, float angle_pitch_offset){
+void screen_IMU_update(ssd1306_t *oled, mpu6050_data_t *mpu6050_data, float angle_roll_offset, float angle_pitch_offset, float current){
 
     char buffer[32];
-    ssd1306_clear_square(oled, 35, 10, 64, 54); // Clear the area for new data
+    ssd1306_clear_square(oled, 35, 10, 93, 54); // Clear the area for new data
     snprintf(buffer, sizeof(buffer), " %.2f", mpu6050_data->AccX);
     ssd1306_draw_string(oled, 35, 20, 1, buffer);
     snprintf(buffer, sizeof(buffer), " %.2f", mpu6050_data->AccY);
@@ -39,6 +40,10 @@ void screen_IMU_update(ssd1306_t *oled, mpu6050_data_t *mpu6050_data, float angl
     ssd1306_draw_string(oled, 35, 45, 1, buffer);
     snprintf(buffer, sizeof(buffer), " %.2f", mpu6050_data->KalmanAnglePitch + angle_pitch_offset);
     ssd1306_draw_string(oled, 35, 55, 1, buffer);
+
+    // Current
+    snprintf(buffer, sizeof(buffer), "I=%.2f A", current);
+    ssd1306_draw_string(oled, 73, 20, 1, buffer);
     ssd1306_show(oled);
 }
 

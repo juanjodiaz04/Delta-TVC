@@ -44,7 +44,9 @@ add_executable(interface_FULL interface_FULL.c
                 lib/servo_lib/servo_lib.c
                 lib/mpu6050/mpu6050.c
                 lib/kalman_filter/kalman_filter.c
-                lib/esc_lib/esc_lib.c)
+                lib/esc_lib/esc_lib.c
+                
+                lib/ADC/adc.c)
 
 pico_set_program_name(interface_FULL "interface_FULL")
 pico_set_program_version(interface_FULL "0.1")
@@ -68,7 +70,8 @@ target_link_libraries(interface_FULL
         hardware_i2c
         hardware_timer
         hardware_pwm
-        hardware_clocks)
+        hardware_clocks
+        hardware_adc)
         
 pico_add_extra_outputs(interface_FULL)
 

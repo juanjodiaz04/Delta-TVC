@@ -4,7 +4,7 @@
 
 void screen_1(ssd1306_t *oled);
 void screen_2(ssd1306_t *oled);
-void screen_IMU_update(ssd1306_t *oled, mpu6050_data_t *mpu6050_data, float angle_roll_offset, float angle_pitch_offset);
+void screen_IMU_update(ssd1306_t *oled, mpu6050_data_t *mpu6050_data, float angle_roll_offset, float angle_pitch_offset, float current);
 void screen_3(ssd1306_t *oled, const char *message);
 void screen_4(ssd1306_t *oled, const char *param_name, float value);
 void screen_initial_float_conversion(ssd1306_t *oled, const char *prompt);
