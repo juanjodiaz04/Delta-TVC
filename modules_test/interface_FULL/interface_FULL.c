@@ -57,7 +57,7 @@
 
 #define INTERVALO_MS_PID 100 ///< Intervalo para el PID
 
-#define INTERVALO_MS_IMU 10 ///< Intervalo para leer el IMU
+#define INTERVALO_MS_IMU 30 ///< Intervalo para leer el IMU
 
 #define UPDATE_RATE_S (INTERVALO_MS_IMU / 1000.0f)  ///< Update rate in seconds
 
@@ -74,8 +74,8 @@
 
 #define CURRENT_SENSOR_PIN 26 ///< GPIO pin for current sensor (ADC)
 
-const float angle_roll_offset = 3.4f; ///< Offset for roll angle in degrees
-const float angle_pitch_offset = -0.3f; ///< Offset for pitch angle in degrees
+const float angle_roll_offset = -1.44f; ///< Offset for roll angle in degrees
+const float angle_pitch_offset = 1.24f; ///< Offset for pitch angle in degrees
 
 const float V_OFFSET = 1.65f;     ///< Asumimos Vcc = 3.3 V
 const float SENSITIVITY = 0.185f;  ///< 185 mV/A para ACS712-05A
@@ -112,7 +112,7 @@ uint8_t speed = 0; ///< Variable to hold ESC speed
 // Flags for state machine
 volatile bool flag_read_imu = false; ///< Flag to indicate IMU data read needed
 volatile bool flag_screen_value_update = false; ///< Flag to indicate screen update needed
-
+volatile bool flag_pid_compute = false; ///< Flag to indicate PID computation needed
 
 /** 
  * @brief Function to handle the main menu state.
@@ -166,14 +166,16 @@ void (*CurrentState)(void); ///< Pointer to the current state function
 //========================================================
 
 bool PID_callback(repeating_timer_t *rt) {
-    pid_compute(&pid_controller_roll);
-    pid_compute(&pid_controller_pitch);
+    // pid_compute(&pid_controller_roll);
+    // pid_compute(&pid_controller_pitch);
 
-    servo_set_angle(&servo_roll, (uint8_t)(pid_output_roll + PID_OFFSET));
-    servo_set_angle(&servo_pitch, (uint8_t)(pid_output_pitch + PID_OFFSET));
-    //angulos del servo
-    printf("Roll Servo Angle: %d, Pitch Servo Angle: %d\n", 
-        servo_roll.angle, servo_pitch.angle);
+    // servo_set_angle(&servo_roll, (uint8_t)(pid_output_roll + PID_OFFSET));
+    // servo_set_angle(&servo_pitch, (uint8_t)(pid_output_pitch + PID_OFFSET));
+    // //angulos del servo
+    // printf("Roll Servo Angle: %d, Pitch Servo Angle: %d\n", 
+    //     servo_roll.angle, servo_pitch.angle);
+
+    flag_pid_compute = true;
 
     return true; // Return true to keep the timer running
 }
@@ -244,8 +246,9 @@ int main()
     //=======================================================
     // Initialize the ESC
     //=======================================================
-    esc_init(&my_esc, ESC_PIN, 50, 64.0f); // GPIO 15, 50 Hz, clkdiv 64
+    esc_init(&my_esc, ESC_PIN, 50, 64.0f); // 50 Hz, clkdiv 64
     esc_write_speed(&my_esc, 0);
+    sleep_ms(2000); // Wait for ESC to initialize
 
     //=======================================================
     // Initialize ADC for current sensor
@@ -269,7 +272,7 @@ void StateMainMenu(void) {
 
             if (key == '1') {
                 screen_2(&oled);
-                esc_write_speed(&my_esc, 30);
+                esc_write_speed(&my_esc, 32);
                 add_repeating_timer_ms(INTERVALO_MS_UPDATE_SCREEN, timer_callback_screen, NULL, &timer_update_screen);
                 add_repeating_timer_ms(INTERVALO_MS_PID, PID_callback, NULL, &timer_PID);
                 add_repeating_timer_ms(INTERVALO_MS_IMU, timer_callback_imu, NULL, &timer_imu);
@@ -285,6 +288,7 @@ void StatePID(void) {
     if(flag_screen_value_update) {
         flag_screen_value_update = false; // Reset the flag after updating the screen
         float current = adc_util_read_current_acs712(&adc_sensor, V_OFFSET, SENSITIVITY);
+        //float current = 1.0f;
         screen_IMU_update(&oled, &mpu6050_data, angle_roll_offset, angle_pitch_offset, current);
     }
     if(flag_read_imu) {
@@ -297,7 +301,22 @@ void StatePID(void) {
         kalman_1d(&(mpu6050_data.KalmanAnglePitch), &(mpu6050_data.KalmanUncertaintyAnglePitch),
             mpu6050_data.RatePitch, mpu6050_data.AnglePitch,
             UPDATE_RATE_S);
+        printf("IMU Data: Roll: %.2f, Pitch: %.2f, Yaw: %.2f\n", 
+            mpu6050_data.AngleRoll, mpu6050_data.AnglePitch, mpu6050_data.AngleYaw);
 
+    }
+    if (flag_pid_compute){
+        flag_pid_compute = false;
+        pid_compute(&pid_controller_roll);
+        pid_compute(&pid_controller_pitch);
+
+        servo_set_angle(&servo_roll, (uint8_t)(pid_output_roll + PID_OFFSET));
+        servo_set_angle(&servo_pitch, (uint8_t)(pid_output_pitch + PID_OFFSET));
+        //angulos del servo
+        // printf("Roll Servo Angle: %d, Pitch Servo Angle: %d\n", 
+        //     servo_roll.angle, servo_pitch.angle);
+        printf("IMU: Roll: %.2f, Pitch: %.2f\n", 
+            mpu6050_data.KalmanAngleRoll, mpu6050_data.KalmanAnglePitch);
     }
     if (get_key_flag()) {
         if (read_mat(&key)){
@@ -462,8 +481,8 @@ float keyboard_to_float(ssd1306_t *oled, const char *prompt) {
                     screen_initial_float_conversion(oled, prompt);
                 }
             }
-            // Invalid character (letters A, B, C, D)
-            else if (key >= 'A' && key <= 'D') {
+            // Invalid character (letters A, B, C)
+            else if (key >= 'A' && key <= 'C') {
                 // Show error for invalid characters
                 screen_invalid_char_error(oled, prompt, input_buffer, display_message);
 
@@ -471,11 +490,22 @@ float keyboard_to_float(ssd1306_t *oled, const char *prompt) {
 
                 // Redraw current input
                 screen_update_float_conversion(oled, prompt, input_buffer, display_message);
+            } else if (key == 'D') {
+                // Clear input buffer
+                memset(input_buffer, 0, sizeof(input_buffer));
+                buffer_index = 0;
+                has_decimal = false;
+                
+                // Show reset message
+                screen_reset_input(oled, prompt);
+                sleep_ms(1000);  // Show reset message for 1 second
+
+                // Redraw initial screen
+                screen_initial_float_conversion(oled, prompt);
             }
         }
-    }else {
-            tight_loop_contents(); // Wait for key press
+        }else {
+                tight_loop_contents(); // Wait for key press
+            }
         }
-        //sleep_ms(50);  
-    }
 }
