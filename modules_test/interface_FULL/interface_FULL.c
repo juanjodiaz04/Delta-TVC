@@ -366,7 +366,8 @@ void StateManual(void) {
     screen_params_summary(&oled, ki, kp, kd, setpoint, speed);
 
     while (!get_key_flag()){tight_loop_contents();}
-    if (get_key_flag()) {
+    
+    while (get_key_flag()) {
         while (!read_mat(&key));
         if (key == '*') {
             
@@ -381,6 +382,9 @@ void StateManual(void) {
             add_repeating_timer_ms(INTERVALO_MS_PID, PID_callback, NULL, &timer_PID);
             add_repeating_timer_ms(INTERVALO_MS_IMU, timer_callback_imu, NULL, &timer_imu);
             CurrentState = StatePID;
+        } else {
+            while (!get_key_flag()){tight_loop_contents();}
+
         }
     }
     
@@ -497,8 +501,8 @@ float keyboard_to_float(ssd1306_t *oled, const char *prompt) {
                 has_decimal = false;
                 
                 // Show reset message
-                screen_reset_input(oled, prompt);
-                sleep_ms(1000);  // Show reset message for 1 second
+                //screen_reset_input(oled, prompt);
+                //sleep_ms(1000);  // Show reset message for 1 second
 
                 // Redraw initial screen
                 screen_initial_float_conversion(oled, prompt);
