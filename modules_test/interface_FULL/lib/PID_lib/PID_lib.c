@@ -5,6 +5,7 @@
 
 #include "lib/PID_lib/PID_lib.h"
 #include "pico/time.h"
+#include <stdio.h>
 
 void pid_create(pid_controller_t *pid, float *in, float *out, float set, float kp, float ki, float kd, float omin, float omax)
 {
@@ -45,6 +46,9 @@ void pid_compute(pid_controller_t *pid)
 
     *(pid->output) = output;
     pid->lastin = input;
+
+    // printf("interm: %.2f, output: %.2f, input: %.2f\n", 
+    //        pid->iterm, output, input);
 }
 
 void pid_tune(pid_controller_t *pid, float kp, float ki, float kd)
