@@ -74,11 +74,11 @@
 
 #define CURRENT_SENSOR_PIN 26 ///< GPIO pin for current sensor (ADC)
 
-const float angle_roll_offset = -1.44f; ///< Offset for roll angle in degrees
-const float angle_pitch_offset = 1.24f; ///< Offset for pitch angle in degrees
+const float angle_roll_offset = -0.4f; ///< Offset for roll angle in degrees
+const float angle_pitch_offset = 1.4f; ///< Offset for pitch angle in degrees
 
 const float V_OFFSET = 1.65f;     ///< Asumimos Vcc = 3.3 V
-const float SENSITIVITY = 0.185f;  ///< 185 mV/A para ACS712-05A
+const float SENSITIVITY = 0.066f;  ///< 66 mV/A para ACS712-05A
 
 /// Timer para capturar datos desde el UART
 static repeating_timer_t timer_update_screen;
@@ -166,14 +166,6 @@ void (*CurrentState)(void); ///< Pointer to the current state function
 //========================================================
 
 bool PID_callback(repeating_timer_t *rt) {
-    // pid_compute(&pid_controller_roll);
-    // pid_compute(&pid_controller_pitch);
-
-    // servo_set_angle(&servo_roll, (uint8_t)(pid_output_roll + PID_OFFSET));
-    // servo_set_angle(&servo_pitch, (uint8_t)(pid_output_pitch + PID_OFFSET));
-    // //angulos del servo
-    // printf("Roll Servo Angle: %d, Pitch Servo Angle: %d\n", 
-    //     servo_roll.angle, servo_pitch.angle);
 
     flag_pid_compute = true;
 
@@ -301,9 +293,6 @@ void StatePID(void) {
         kalman_1d(&(mpu6050_data.KalmanAnglePitch), &(mpu6050_data.KalmanUncertaintyAnglePitch),
             mpu6050_data.RatePitch, mpu6050_data.AnglePitch,
             UPDATE_RATE_S);
-        printf("IMU Data: Roll: %.2f, Pitch: %.2f, Yaw: %.2f\n", 
-            mpu6050_data.AngleRoll, mpu6050_data.AnglePitch, mpu6050_data.AngleYaw);
-
     }
     if (flag_pid_compute){
         flag_pid_compute = false;
@@ -312,11 +301,6 @@ void StatePID(void) {
 
         servo_set_angle(&servo_roll, (uint8_t)(pid_output_roll + PID_OFFSET));
         servo_set_angle(&servo_pitch, (uint8_t)(pid_output_pitch + PID_OFFSET));
-        //angulos del servo
-        // printf("Roll Servo Angle: %d, Pitch Servo Angle: %d\n", 
-        //     servo_roll.angle, servo_pitch.angle);
-        printf("IMU: Roll: %.2f, Pitch: %.2f\n", 
-            mpu6050_data.KalmanAngleRoll, mpu6050_data.KalmanAnglePitch);
     }
     if (get_key_flag()) {
         if (read_mat(&key)){
@@ -446,7 +430,7 @@ float keyboard_to_float(ssd1306_t *oled, const char *prompt) {
                     } else {
                         screen_number_too_long_error(oled);}
                     
-                    sleep_ms(200);  // Show error
+                    sleep_ms(200);  // Justo for showing error. There aren't any other processes.
                     
                     // Redraw current input
                     screen_update_float_conversion(oled, prompt, input_buffer, display_message);
@@ -499,10 +483,6 @@ float keyboard_to_float(ssd1306_t *oled, const char *prompt) {
                 memset(input_buffer, 0, sizeof(input_buffer));
                 buffer_index = 0;
                 has_decimal = false;
-                
-                // Show reset message
-                //screen_reset_input(oled, prompt);
-                //sleep_ms(1000);  // Show reset message for 1 second
 
                 // Redraw initial screen
                 screen_initial_float_conversion(oled, prompt);
